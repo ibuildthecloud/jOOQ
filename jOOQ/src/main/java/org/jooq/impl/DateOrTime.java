@@ -40,63 +40,51 @@
  */
 package org.jooq.impl;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.Date;
+import java.sql.Time;
 
-import javax.sql.DataSource;
+import org.jooq.Configuration;
+import org.jooq.DataType;
+import org.jooq.Field;
+import org.jooq.QueryPart;
 
-import org.jooq.ConnectionProvider;
-import org.jooq.exception.DataAccessException;
 
 /**
- * A default implementation for a pooled {@link DataSource}-oriented
- * {@link ConnectionProvider}
- * <p>
- * This implementation wraps a JDBC {@link DataSource}. jOOQ will use that data
- * source for initialising connections, and creating statements.
- * <p>
- * Use this connection provider if you want to run distributed transactions,
- * such as <code>javax.transaction.UserTransaction</code>. jOOQ will
- * {@link Connection#close() close()} all connections after query execution (and
- * result fetching) in order to return the connection to the connection pool. If
- * you do not use distributed transactions, this will produce driver-specific
- * behaviour at the end of query execution at <code>close()</code> invocation
- * (e.g. a transaction rollback). Use a {@link DefaultConnectionProvider}
- * instead, to control the connection's lifecycle, or implement your own
- * {@link ConnectionProvider}.
- *
- * @author Aaron Digulla
  * @author Lukas Eder
  */
-public class DataSourceConnectionProvider implements ConnectionProvider {
+class DateOrTime<T extends java.util.Date> extends AbstractFunction<T> {
 
-    private final DataSource dataSource;
+    /**
+     * Generated UID
+     */
+    private static final long serialVersionUID = -6729613078727690134L;
 
-    public DataSourceConnectionProvider(DataSource dataSource) {
-        this.dataSource = dataSource;
+    private final Field<?>    field;
+
+    DateOrTime(Field<?> field, DataType<T> dataType) {
+        super(name(dataType), dataType, field);
+
+        this.field = field;
     }
 
-    public DataSource dataSource() {
-        return dataSource;
+    private static String name(DataType<?> dataType) {
+        return dataType.getType() == Date.class
+             ? "date"
+             : dataType.getType() == Time.class
+             ? "time"
+             : "timestamp";
     }
 
     @Override
-    public Connection acquire() {
-        try {
-            return dataSource.getConnection();
-        }
-        catch (SQLException e) {
-            throw new DataAccessException("Error getting connection from data source " + dataSource, e);
-        }
-    }
+    final QueryPart getFunction0(Configuration configuration) {
+        switch (configuration.dialect().family()) {
+            case MYSQL:
+            case MARIADB:
+                return DSL.field("{" + name(getDataType()) + "}({0})", getDataType(), field);
 
-    @Override
-    public void release(Connection connection) {
-        try {
-            connection.close();
-        }
-        catch (SQLException e) {
-            throw new DataAccessException("Error closing connection " + connection, e);
+            default:
+            case H2:
+                return field.cast(getDataType());
         }
     }
 }
