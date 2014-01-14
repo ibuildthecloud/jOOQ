@@ -202,6 +202,7 @@ import org.jooq.SelectWhereStep;
 import org.jooq.SortField;
 import org.jooq.Support;
 import org.jooq.Table;
+import org.jooq.TableLike;
 import org.jooq.TruncateIdentityStep;
 import org.jooq.UDTRecord;
 import org.jooq.Update;
@@ -4729,8 +4730,62 @@ public class DSL {
      * </pre></code>
      */
     @Support({ CUBRID, POSTGRES })
+    public static Table<Record1<Integer>> generateSeries(int from, Field<Integer> to) {
+        return generateSeries(val(from), nullSafe(to));
+    }
+
+    /**
+     * A table function generating a series of values from <code>from</code> to
+     * <code>to</code> (inclusive).
+     * <p>
+     * This function is inspired by PostgreSQL's
+     * <code>GENERATE_SERIES(from, to)</code> function. Other SQL dialects may
+     * be capable of emulating this behaviour, e.g. Oracle: <code><pre>
+     * -- PostgreSQL
+     * SELECT * FROM GENERATE_SERIES(a, b)
+     *
+     * -- Oracle
+     * SELECT * FROM (SELECT a + LEVEL - 1 FROM DUAL CONNECT BY a + LEVEL - 1 &lt;= b)
+     * </pre></code>
+     */
+    @Support({ CUBRID, POSTGRES })
+    public static Table<Record1<Integer>> generateSeries(Field<Integer> from, int to) {
+        return new GenerateSeries(nullSafe(from), val(to));
+    }
+
+    /**
+     * A table function generating a series of values from <code>from</code> to
+     * <code>to</code> (inclusive).
+     * <p>
+     * This function is inspired by PostgreSQL's
+     * <code>GENERATE_SERIES(from, to)</code> function. Other SQL dialects may
+     * be capable of emulating this behaviour, e.g. Oracle: <code><pre>
+     * -- PostgreSQL
+     * SELECT * FROM GENERATE_SERIES(a, b)
+     *
+     * -- Oracle
+     * SELECT * FROM (SELECT a + LEVEL - 1 FROM DUAL CONNECT BY a + LEVEL - 1 &lt;= b)
+     * </pre></code>
+     */
+    @Support({ CUBRID, POSTGRES })
     public static Table<Record1<Integer>> generateSeries(Field<Integer> from, Field<Integer> to) {
         return new GenerateSeries(nullSafe(from), nullSafe(to));
+    }
+
+    /**
+     * Create a <code>LATERAL</code> joined table.
+     * <p>
+     * Example:
+     * <code><pre>
+     * SELECT *
+     * FROM employees e,
+     *      LATERAL(SELECT * FROM departments d
+     *              WHERE e.department_id = d.department_id);
+     * </pre></code>
+     */
+    @Support({ POSTGRES })
+    public static <R extends Record> Table<R> lateral(TableLike<R> table) {
+        return new Lateral<R>(table.asTable());
     }
 
     // -------------------------------------------------------------------------
@@ -9484,7 +9539,7 @@ public class DSL {
         to = "MathFunction"
     )
     public static Field<BigDecimal> acos(Field<? extends Number> field) {
-        return function("acos", SQLDataType.NUMERIC, nullSafe(field));
+        return new Acos(nullSafe(field));
     }
 
     /**
@@ -9515,7 +9570,7 @@ public class DSL {
         to = "MathFunction"
     )
     public static Field<BigDecimal> asin(Field<? extends Number> field) {
-        return function("asin", SQLDataType.NUMERIC, nullSafe(field));
+        return new Asin(nullSafe(field));
     }
 
     /**
@@ -9546,7 +9601,7 @@ public class DSL {
         to = "MathFunction"
     )
     public static Field<BigDecimal> atan(Field<? extends Number> field) {
-        return function("atan", SQLDataType.NUMERIC, nullSafe(field));
+        return new Atan(nullSafe(field));
     }
 
     /**
@@ -10084,9 +10139,13 @@ public class DSL {
     /**
      * Get the count(distinct field1, field2) function.
      * <p>
-     * Some dialects support several expressions in the <code>COUNT(DISTINCT expr1, expr2)</code> aggregate function.
+     * Some dialects support several expressions in the
+     * <code>COUNT(DISTINCT expr1, expr2)</code> aggregate function.
+     * <p>
+     * {@link SQLDialect#POSTGRES} supports this as
+     * <code>COUNT(DISTINCT(expr1, expr2))</code>.
      */
-    @Support({ HSQLDB, MYSQL })
+    @Support({ HSQLDB, MYSQL, POSTGRES })
     @Transition(
         name = "COUNT DISTINCT",
         args = "Field+"
@@ -10527,6 +10586,7 @@ public class DSL {
      * <li> {@link SQLDialect#H2}</li>
      * <li> {@link SQLDialect#HSQLDB}</li>
      * <li> {@link SQLDialect#MYSQL}</li>
+     * <li> {@link SQLDialect#SQLITE} (but without <code>ORDER BY</code>)</li>
      * </ul>
      * <p>
      * It is simulated by the following dialects:
@@ -10539,13 +10599,44 @@ public class DSL {
      *
      * @see #listAgg(Field)
      */
-    @Support({ CUBRID, H2, HSQLDB, MARIADB, MYSQL, POSTGRES })
+    @Support({ CUBRID, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     @Transition(
         name = "GROUP_CONCAT",
         args = "Field"
     )
     public static GroupConcatOrderByStep groupConcat(Field<?> field) {
         return new GroupConcat(nullSafe(field));
+    }
+
+    /**
+     * Get the aggregated concatenation for a field.
+     * <p>
+     * This is natively supported by
+     * <ul>
+     * <li> {@link SQLDialect#CUBRID}</li>
+     * <li> {@link SQLDialect#H2}</li>
+     * <li> {@link SQLDialect#HSQLDB}</li>
+     * <li> {@link SQLDialect#MYSQL}</li>
+     * <li> {@link SQLDialect#SQLITE}</li>
+     * </ul>
+     * <p>
+     * It is simulated by the following dialects:
+     * <ul>
+     * <li> {@link SQLDialect#DB2}: Using <code>XMLAGG()</code></li>
+     * <li> {@link SQLDialect#ORACLE}: Using <code>LISTAGG()</code></li>
+     * <li> {@link SQLDialect#POSTGRES}: Using <code>STRING_AGG()</code></li>
+     * <li> {@link SQLDialect#SYBASE}: Using <code>LIST()</code></li>
+     * </ul>
+     *
+     * @see #listAgg(Field)
+     */
+    @Support({ CUBRID, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    @Transition(
+        name = "GROUP_CONCAT",
+        args = "Field+"
+    )
+    public static AggregateFunction<String> groupConcat(Field<?> field, String separator) {
+        return new GroupConcat(nullSafe(field)).separator(separator);
     }
 
     /**

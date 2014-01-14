@@ -48,6 +48,7 @@ import static org.jooq.impl.Utils.getAnnotatedMembers;
 import static org.jooq.impl.Utils.getMatchingGetter;
 import static org.jooq.impl.Utils.getMatchingMembers;
 import static org.jooq.impl.Utils.hasColumnAnnotations;
+import static org.jooq.impl.Utils.indexOrFail;
 import static org.jooq.impl.Utils.settings;
 
 import java.lang.reflect.Method;
@@ -177,6 +178,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <T> T getValue(Field<T> field, T defaultValue) {
         return getValue0(field).getValue(defaultValue);
     }
@@ -187,6 +189,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <T> T getValue(Field<?> field, Class<? extends T> type, T defaultValue) {
         final T result = getValue(field, type);
         return result == null ? defaultValue : result;
@@ -198,6 +201,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <T, U> U getValue(Field<T> field, Converter<? super T, U> converter, U defaultValue) {
         final U result = getValue(field, converter);
         return result == null ? defaultValue : result;
@@ -209,6 +213,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final Object getValue(int index, Object defaultValue) {
         final Object result = getValue(index);
         return result == null ? defaultValue : result;
@@ -220,6 +225,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <T> T getValue(int index, Class<? extends T> type, T defaultValue) {
         final T result = getValue(index, type);
         return result == null ? defaultValue : result;
@@ -231,6 +237,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <U> U getValue(int index, Converter<?, U> converter, U defaultValue) {
         final U result = getValue(index, converter);
         return result == null ? defaultValue : result;
@@ -242,6 +249,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final Object getValue(String fieldName, Object defaultValue) {
         return getValue((Field<Object>) field(fieldName), defaultValue);
     }
@@ -252,6 +260,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <T> T getValue(String fieldName, Class<? extends T> type, T defaultValue) {
         final T result = getValue(fieldName, type);
         return result == null ? defaultValue : result;
@@ -263,6 +272,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
+    @Deprecated
     public final <U> U getValue(String fieldName, Converter<?, U> converter, U defaultValue) {
         final U result = getValue(fieldName, converter);
         return result == null ? defaultValue : result;
@@ -279,16 +289,28 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     final <T> Value<T> getValue0(Field<T> field) {
-        return getValue0(fieldsRow().indexOf(field));
+        return getValue0(indexOrFail(fieldsRow(), field));
     }
 
     final Value<?>[] getValues() {
         return values;
     }
 
+    /**
+     * Subclasses may type-unsafely set a value to a record index. This method
+     * takes care of converting the value to the appropriate type.
+     */
+    protected final void setValue(int index, Object value) {
+        setValue(index, (Field) field(index), value);
+    }
+
     @Override
     public final <T> void setValue(Field<T> field, T value) {
-        Value<T> val = getValue0(field);
+        setValue(indexOrFail(fields, field), field, value);
+    }
+
+    private final <T> void setValue(int index, Field<T> field, T value) {
+        Value<T> val = getValue0(index);
         UniqueKey<?> key = getPrimaryKey();
 
         // Normal fields' changed flag is always set to true
@@ -330,19 +352,11 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     final void setValue(Field<?> field, Value<?> value) {
-        setValue(fieldsRow().indexOf(field), value);
+        setValue(indexOrFail(fieldsRow(), field), value);
     }
 
     final void setValue(int index, Value<?> value) {
         getValues()[index] = value;
-    }
-
-    /**
-     * Subclasses may type-unsafely set a value to a record index. This method
-     * takes care of converting the value to the appropriate type.
-     */
-    protected final void setValue(int index, Object value) {
-        getValue0(index).setValue(Convert.convert(value, fields.type(index)));
     }
 
     /**
@@ -375,7 +389,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final <T> T original(Field<T> field) {
-        return (T) original(fieldsRow().indexOf(field));
+        return (T) original(indexOrFail(fieldsRow(), field));
     }
 
     @Override
@@ -385,7 +399,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final Object original(String fieldName) {
-        return original(fieldsRow().indexOf(fieldName));
+        return original(indexOrFail(fieldsRow(), fieldName));
     }
 
     @Override
@@ -401,7 +415,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final boolean changed(Field<?> field) {
-        return changed(fieldsRow().indexOf(field));
+        return changed(indexOrFail(fieldsRow(), field));
     }
 
     @Override
@@ -411,7 +425,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final boolean changed(String fieldName) {
-        return changed(fieldsRow().indexOf(fieldName));
+        return changed(indexOrFail(fieldsRow(), fieldName));
     }
 
     @Override
@@ -423,7 +437,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void changed(Field<?> field, boolean changed) {
-        changed(fieldsRow().indexOf(field), changed);
+        changed(indexOrFail(fieldsRow(), field), changed);
     }
 
     @Override
@@ -433,7 +447,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void changed(String fieldName, boolean changed) {
-        changed(fieldsRow().indexOf(fieldName), changed);
+        changed(indexOrFail(fieldsRow(), fieldName), changed);
     }
 
     @Override
@@ -445,7 +459,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void reset(Field<?> field) {
-        reset(fieldsRow().indexOf(field));
+        reset(indexOrFail(fieldsRow(), field));
     }
 
     @Override
@@ -455,7 +469,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
     @Override
     public final void reset(String fieldName) {
-        reset(fieldsRow().indexOf(fieldName));
+        reset(indexOrFail(fieldsRow(), fieldName));
     }
 
     @Override

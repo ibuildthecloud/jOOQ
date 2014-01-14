@@ -77,6 +77,7 @@ import java.util.Queue;
 
 import junit.framework.Assert;
 
+import org.jooq.AttachableInternal;
 import org.jooq.Cursor;
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -95,6 +96,7 @@ import org.jooq.Select;
 import org.jooq.SelectQuery;
 import org.jooq.TableRecord;
 import org.jooq.UpdatableRecord;
+import org.jooq.conf.Settings;
 import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 import org.jooq.exception.MappingException;
@@ -436,6 +438,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     public void testFetchMany() throws Exception {
         switch (dialect().family()) {
             /* [pro] xx
+            xxxx xxxxxxx
             xxxx xxxxxxx
             xxxx xxxxxxx
             xx [/pro] */
@@ -1193,7 +1196,6 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
     @Test
     public void testFetchIntoTableRecords() throws Exception {
-        jOOQAbstractTest.reset = false;
 
         // [#1819] Check if only applicable setters are used
         // JOIN two tables into a generated UpdatableRecord
@@ -1217,6 +1219,42 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
             assertEquals(BOOK_TITLES.get(i), result1.get(i).getValue(TBook_TITLE()));
             assertEquals(BOOK_AUTHOR_IDS.get(i), result1.get(i).getValue(TBook_AUTHOR_ID()));
         }
+    }
+
+    @Test
+    public void testFetchIntoTableRecordsWithColumnAmbiguities() throws Exception {
+
+        // [#2836] When fetching into TableRecord types, the "expected" behaviour would
+        // be to map "obvious" columns onto their corresponding values
+        // Fixing this might be a "dangerous" change.
+        B book =
+        create().select()
+                .from(TBook())
+                .join(TAuthor())
+                .on(TBook_AUTHOR_ID().eq(TAuthor_ID()))
+                .where(TBook_ID().eq(4))
+                .fetchOneInto(TBook().getRecordType());
+
+        assertEquals(4, (int) book.getValue(TBook_ID()));
+    }
+
+    @Test
+    public void testFetchAttachables() throws Exception {
+        // [#2869] DefaultRecordMapper should recognise Attachable types and attach them
+        // according to the Settings.
+
+        B b1 = create().selectFrom(TBook()).where(TBook_ID().eq(1)).fetchOne();
+        B b2 = b1.into(TBook().getRecordType());
+
+        assertNotNull(((AttachableInternal) b1).configuration());
+        assertNotNull(((AttachableInternal) b2).configuration());
+
+        B b3 = create(new Settings().withAttachRecords(false))
+                    .selectFrom(TBook()).where(TBook_ID().eq(1)).fetchOne();
+        B b4 = b3.into(TBook().getRecordType());
+
+        assertNull(((AttachableInternal) b3).configuration());
+        assertNull(((AttachableInternal) b4).configuration());
     }
 
     @Test
@@ -2150,6 +2188,92 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
             assertEquals(keyList.getValue(1), on(result.get(0)).call("getLanguageId").get());
             assertEquals(keyList.getValue(2), on(result.get(0)).call("getTitle").get());
         }
+    }
+
+    @Test
+    public void testFetchGroupsMapper() throws Exception {
+        RecordMapper<Record, String> bookIdMapper = new RecordMapper<Record, String>() {
+            @Override
+            public String map(Record record) {
+                return record.getValue(TBook_ID(), String.class);
+            }
+        };
+        RecordMapper<Record, String> authorIdMapper = new RecordMapper<Record, String>() {
+            @Override
+            public String map(Record record) {
+                return record.getValue(TBook_AUTHOR_ID(), String.class);
+            }
+        };
+
+        Map<Integer, List<String>> groups1 =
+        create().select(TBook_AUTHOR_ID(), TBook_ID())
+                .from(TBook())
+                .orderBy(TBook_AUTHOR_ID(), TBook_ID())
+                .fetchGroups(TBook_AUTHOR_ID(), bookIdMapper);
+
+        assertEquals(asList(1, 2), new ArrayList<Integer>(groups1.keySet()));
+        assertEquals(asList("1", "2"), groups1.get(1));
+        assertEquals(asList("3", "4"), groups1.get(2));
+
+        Map<Record, List<String>> groups2 =
+        create().select(TBook_AUTHOR_ID(), TBook_ID())
+                .from(TBook())
+                .orderBy(TBook_AUTHOR_ID(), TBook_ID())
+                .fetchGroups(new Field[] {
+                    TBook_ID(),
+                    TBook_AUTHOR_ID()
+                }, bookIdMapper);
+
+        assertEquals(4, groups2.size());
+        assertEquals(1, (int) new ArrayList<Record>(groups2.keySet()).get(0).getValue(TBook_ID()));
+        assertEquals(2, (int) new ArrayList<Record>(groups2.keySet()).get(1).getValue(TBook_ID()));
+        assertEquals(3, (int) new ArrayList<Record>(groups2.keySet()).get(2).getValue(TBook_ID()));
+        assertEquals(4, (int) new ArrayList<Record>(groups2.keySet()).get(3).getValue(TBook_ID()));
+        assertEquals(1, (int) new ArrayList<Record>(groups2.keySet()).get(0).getValue(TBook_AUTHOR_ID()));
+        assertEquals(1, (int) new ArrayList<Record>(groups2.keySet()).get(1).getValue(TBook_AUTHOR_ID()));
+        assertEquals(2, (int) new ArrayList<Record>(groups2.keySet()).get(2).getValue(TBook_AUTHOR_ID()));
+        assertEquals(2, (int) new ArrayList<Record>(groups2.keySet()).get(3).getValue(TBook_AUTHOR_ID()));
+        assertEquals("1", new ArrayList<List<String>>(groups2.values()).get(0).get(0));
+        assertEquals("2", new ArrayList<List<String>>(groups2.values()).get(1).get(0));
+        assertEquals("3", new ArrayList<List<String>>(groups2.values()).get(2).get(0));
+        assertEquals("4", new ArrayList<List<String>>(groups2.values()).get(3).get(0));
+        assertEquals(1, new ArrayList<List<String>>(groups2.values()).get(0).size());
+        assertEquals(1, new ArrayList<List<String>>(groups2.values()).get(1).size());
+        assertEquals(1, new ArrayList<List<String>>(groups2.values()).get(2).size());
+        assertEquals(1, new ArrayList<List<String>>(groups2.values()).get(3).size());
+
+
+        Map<Integer, String> maps1 =
+        create().select(TBook_AUTHOR_ID(), TBook_ID())
+                .from(TBook())
+                .orderBy(TBook_AUTHOR_ID(), TBook_ID())
+                .fetchMap(TBook_ID(), authorIdMapper);
+
+        assertEquals(asList(1, 2, 3, 4), new ArrayList<Integer>(maps1.keySet()));
+        assertEquals(asList("1", "1", "2", "2"), new ArrayList<String>(maps1.values()));
+
+        Map<List<?>, String> maps2 =
+        create().select(TBook_AUTHOR_ID(), TBook_ID())
+                .from(TBook())
+                .orderBy(TBook_AUTHOR_ID(), TBook_ID())
+                .fetchMap(new Field[] {
+                    TBook_ID(),
+                    TBook_AUTHOR_ID()
+                }, bookIdMapper);
+
+        assertEquals(4, maps2.size());
+        assertEquals(1, new ArrayList<List<?>>(maps2.keySet()).get(0).get(0));
+        assertEquals(2, new ArrayList<List<?>>(maps2.keySet()).get(1).get(0));
+        assertEquals(3, new ArrayList<List<?>>(maps2.keySet()).get(2).get(0));
+        assertEquals(4, new ArrayList<List<?>>(maps2.keySet()).get(3).get(0));
+        assertEquals(1, new ArrayList<List<?>>(maps2.keySet()).get(0).get(1));
+        assertEquals(1, new ArrayList<List<?>>(maps2.keySet()).get(1).get(1));
+        assertEquals(2, new ArrayList<List<?>>(maps2.keySet()).get(2).get(1));
+        assertEquals(2, new ArrayList<List<?>>(maps2.keySet()).get(3).get(1));
+        assertEquals("1", new ArrayList<String>(maps2.values()).get(0));
+        assertEquals("2", new ArrayList<String>(maps2.values()).get(1));
+        assertEquals("3", new ArrayList<String>(maps2.values()).get(2));
+        assertEquals("4", new ArrayList<String>(maps2.values()).get(3));
     }
 
     @Test

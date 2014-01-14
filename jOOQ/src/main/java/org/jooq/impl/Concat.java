@@ -43,6 +43,7 @@ package org.jooq.impl;
 import static org.jooq.impl.DSL.castAll;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.ExpressionOperator.ADD;
+import static org.jooq.impl.ExpressionOperator.BIT_AND;
 import static org.jooq.impl.ExpressionOperator.CONCAT;
 
 import org.jooq.Configuration;
@@ -85,6 +86,9 @@ class Concat extends AbstractFunction<String> {
 
             /* [pro] xx
             xxxx xxxxxxx
+                xx xxx xxxxxx x xxxxxxx xxxxxxxxxx xxx xxxxx xxx xxxxxxxxxx
+                xxxxxx xxx xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx xxxxxxxx
+
             xxxx xxxxxxxxxx
                 xxxxxx xxx xxxxxxxxxxxxxxxxxxxxxxx xxxxxx xxxxxxxx
 

@@ -9,7 +9,7 @@ package org.jooq.test.postgres.generatedclasses.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TBookStore extends org.jooq.impl.TableImpl<org.jooq.test.postgres.generatedclasses.tables.records.TBookStoreRecord> {
 
-	private static final long serialVersionUID = 1276645766;
+	private static final long serialVersionUID = 1577230919;
 
 	/**
 	 * The singleton instance of <code>public.t_book_store</code>
@@ -27,7 +27,7 @@ public class TBookStore extends org.jooq.impl.TableImpl<org.jooq.test.postgres.g
 	/**
 	 * The column <code>public.t_book_store.name</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TBookStoreRecord, java.lang.String> NAME = createField("name", org.jooq.impl.SQLDataType.VARCHAR.length(400).nullable(false), this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TBookStoreRecord, java.lang.String> NAME = createField("name", org.jooq.impl.SQLDataType.VARCHAR.length(400).nullable(false).defaulted(true), this);
 
 	/**
 	 * Create a <code>public.t_book_store</code> table reference
@@ -41,6 +41,10 @@ public class TBookStore extends org.jooq.impl.TableImpl<org.jooq.test.postgres.g
 	 */
 	public TBookStore(java.lang.String alias) {
 		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, org.jooq.test.postgres.generatedclasses.tables.TBookStore.T_BOOK_STORE);
+	}
+
+	private TBookStore(java.lang.String alias, org.jooq.Table<org.jooq.test.postgres.generatedclasses.tables.records.TBookStoreRecord> aliased) {
+		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, aliased);
 	}
 
 	/**
@@ -64,6 +68,13 @@ public class TBookStore extends org.jooq.impl.TableImpl<org.jooq.test.postgres.g
 	 */
 	@Override
 	public org.jooq.test.postgres.generatedclasses.tables.TBookStore as(java.lang.String alias) {
-		return new org.jooq.test.postgres.generatedclasses.tables.TBookStore(alias);
+		return new org.jooq.test.postgres.generatedclasses.tables.TBookStore(alias, this);
+	}
+
+	/**
+	 * Rename this table
+	 */
+	public org.jooq.test.postgres.generatedclasses.tables.TBookStore rename(java.lang.String name) {
+		return new org.jooq.test.postgres.generatedclasses.tables.TBookStore(name, null);
 	}
 }

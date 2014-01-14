@@ -44,22 +44,26 @@ import static java.util.Arrays.asList;
 import static org.jooq.Clause.TABLE;
 import static org.jooq.Clause.TABLE_JOIN;
 import static org.jooq.Clause.TABLE_JOIN_CROSS;
+import static org.jooq.Clause.TABLE_JOIN_CROSS_APPLY;
 import static org.jooq.Clause.TABLE_JOIN_INNER;
 import static org.jooq.Clause.TABLE_JOIN_NATURAL;
 import static org.jooq.Clause.TABLE_JOIN_NATURAL_OUTER_LEFT;
 import static org.jooq.Clause.TABLE_JOIN_NATURAL_OUTER_RIGHT;
 import static org.jooq.Clause.TABLE_JOIN_ON;
+import static org.jooq.Clause.TABLE_JOIN_OUTER_APPLY;
 import static org.jooq.Clause.TABLE_JOIN_OUTER_FULL;
 import static org.jooq.Clause.TABLE_JOIN_OUTER_LEFT;
 import static org.jooq.Clause.TABLE_JOIN_OUTER_RIGHT;
 import static org.jooq.Clause.TABLE_JOIN_PARTITION_BY;
 import static org.jooq.Clause.TABLE_JOIN_USING;
+import static org.jooq.JoinType.CROSS_APPLY;
 import static org.jooq.JoinType.CROSS_JOIN;
 import static org.jooq.JoinType.JOIN;
 import static org.jooq.JoinType.LEFT_OUTER_JOIN;
 import static org.jooq.JoinType.NATURAL_JOIN;
 import static org.jooq.JoinType.NATURAL_LEFT_OUTER_JOIN;
 import static org.jooq.JoinType.NATURAL_RIGHT_OUTER_JOIN;
+import static org.jooq.JoinType.OUTER_APPLY;
 import static org.jooq.JoinType.RIGHT_OUTER_JOIN;
 // ...
 // ...
@@ -159,28 +163,15 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
         x
         xx [/pro] */
 
-        context.visit(lhs)
-               .formatIndentStart()
+        toSQLTable(context, lhs);
+
+        context.formatIndentStart()
                .formatSeparator()
                .start(translatedClause)
                .keyword(keyword)
                .sql(" ");
 
-        // [#671] Some databases formally require nested JOINS to be
-        // wrapped in parentheses (e.g. MySQL)
-        if (rhs instanceof JoinTable) {
-            context.sql("(")
-                   .formatIndentStart()
-                   .formatNewLine();
-        }
-
-        context.visit(rhs);
-
-        if (rhs instanceof JoinTable) {
-            context.formatIndentEnd()
-                   .formatNewLine()
-                   .sql(")");
-        }
+        toSQLTable(context, rhs);
 
         // [#1645] The Oracle PARTITION BY clause can be put to the right of an
         // OUTER JOINed table
@@ -198,12 +189,37 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
         if (!asList(CROSS_JOIN,
                     NATURAL_JOIN,
                     NATURAL_LEFT_OUTER_JOIN,
-                    NATURAL_RIGHT_OUTER_JOIN).contains(translatedType)) {
+                    NATURAL_RIGHT_OUTER_JOIN,
+                    CROSS_APPLY,
+                    OUTER_APPLY).contains(translatedType)) {
             toSQLJoinCondition(context);
         }
 
         context.end(translatedClause)
                .formatIndentEnd();
+    }
+
+    private void toSQLTable(RenderContext context, Table<?> table) {
+
+        // [#671] Some databases formally require nested JOINS on the right hand
+        // side of the join expression to be wrapped in parentheses (e.g. MySQL).
+        // In other databases, it's a good idea to wrap them all
+        boolean wrap = table instanceof JoinTable &&
+            (table == rhs || asList().contains(context.configuration().dialect().family()));
+
+        if (wrap) {
+            context.sql("(")
+                   .formatIndentStart()
+                   .formatNewLine();
+        }
+
+        context.visit(table);
+
+        if (wrap) {
+            context.formatIndentEnd()
+                   .formatNewLine()
+                   .sql(")");
+        }
     }
 
     /**
@@ -219,6 +235,8 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
             case FULL_OUTER_JOIN:          return TABLE_JOIN_OUTER_FULL;
             case NATURAL_LEFT_OUTER_JOIN:  return TABLE_JOIN_NATURAL_OUTER_LEFT;
             case NATURAL_RIGHT_OUTER_JOIN: return TABLE_JOIN_NATURAL_OUTER_RIGHT;
+            case CROSS_APPLY:              return TABLE_JOIN_CROSS_APPLY;
+            case OUTER_APPLY:              return TABLE_JOIN_OUTER_APPLY;
             default: throw new IllegalArgumentException("Bad join type: " + translatedType);
         }
     }
@@ -245,7 +263,7 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
     }
 
     private final boolean simulateCrossJoin(RenderContext context) {
-        return false/* [pro] xx xx xxxx xx xxxxxxxxxx xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxx [/pro] */;
+        return type == CROSS_JOIN && asList().contains(context.configuration().dialect().family());
     }
 
     private final boolean simulateNaturalJoin(RenderContext context) {
@@ -477,7 +495,7 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
         throw onKeyException();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public final JoinTable onKey(ForeignKey<?, ?> key) {
         JoinTable result = this;
@@ -486,7 +504,11 @@ class JoinTable extends AbstractTable<Record> implements TableOptionalOnStep, Ta
         TableField<?, ?>[] referenced = key.getKey().getFieldsArray();
 
         for (int i = 0; i < references.length; i++) {
-            result.and(((Field<Void>) references[i]).equal((Field<Void>) referenced[i]));
+            Field f1 = references[i];
+            Field f2 = referenced[i];
+
+            // [#2870] TODO: If lhs or rhs are aliased tables, extract the appropriate fields from them
+            result.and(f1.equal(f2));
         }
 
         return result;

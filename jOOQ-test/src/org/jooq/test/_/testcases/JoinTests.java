@@ -42,9 +42,7 @@ package org.jooq.test._.testcases;
 
 import static java.util.Arrays.asList;
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
-import static junit.framework.Assert.fail;
 import static org.jooq.SQLDialect.CUBRID;
 // ...
 import static org.jooq.SQLDialect.HSQLDB;
@@ -54,12 +52,15 @@ import static org.jooq.SQLDialect.SQLITE;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.falseCondition;
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.lateral;
 import static org.jooq.impl.DSL.lower;
 import static org.jooq.impl.DSL.one;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.selectOne;
 import static org.jooq.impl.DSL.val;
 import static org.jooq.impl.DSL.zero;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import java.sql.Date;
 import java.util.List;
@@ -308,6 +309,160 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     }
 
     @Test
+    public void testCrossApply() throws Exception {
+        switch (dialect()) {
+            /* [pro] xx
+            xxxx xxxxxxxxxx
+            xxxx xxxxxxxxxx
+            xxxx xxxxxxxxxxxxxx
+            xxxx xxxxxxxxxxxxxx
+            xxxx xxxxxxx
+                xxxxxx
+
+            xx [/pro] */
+            default:
+                log.info("SKIPPING", "CROSS APPLY tests");
+                return;
+        }
+
+        /* [pro] xx
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxx
+                    xxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxx
+                        xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                        x
+                        xxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+
+        xxxxxxxxxxxxx
+            xxxxxxxxx xxx
+            xxxxxxxxxxxxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxx
+                            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                            x
+                            xxxxxxxxxxxxxxxxxxxxx
+                    x
+                    xxxxxxxxxxx xxxxxxxxxx
+        xx
+        xx [/pro] */
+    }
+
+    @Test
+    public void testLateralJoin() throws Exception {
+        switch (dialect()) {
+            /* [pro] xx
+            xxxx xxxxxxxxxx
+            xx [/pro] */
+
+            case POSTGRES:
+                break;
+
+            default:
+                log.info("SKIPPING", "LATERAL tests");
+                return;
+        }
+
+        assertEquals(
+            asList(2, 2),
+            create().select()
+                    .from(TAuthor(),
+                        lateral(select(count().as("c"))
+                                .from(TBook())
+                                .where(TBook_AUTHOR_ID().eq(TAuthor_ID())))
+                    )
+                    .fetch("c", int.class)
+        );
+
+        assertEquals(
+            asList(2, 2),
+            create().select()
+                    .from(TAuthor().crossJoin(
+                        lateral(select(count().as("c"))
+                            .from(TBook())
+                            .where(TBook_AUTHOR_ID().eq(TAuthor_ID())))
+                        )
+                    )
+                    .fetch("c", int.class)
+            );
+
+        assertEquals(
+            asList(2, 2),
+            create().select()
+                    .from(TAuthor(),
+                        lateral(select(count())
+                            .from(TBook())
+                            .where(TBook_AUTHOR_ID().eq(TAuthor_ID()))).as("x", "c")
+                        )
+                        .fetch("c", int.class)
+        );
+
+        assertEquals(
+            asList(2, 2),
+            create().select()
+                    .from(TAuthor(),
+                        lateral(select(count())
+                            .from(TBook())
+                            .where(TBook_AUTHOR_ID().eq(TAuthor_ID())).asTable("x", "c"))
+                        )
+                        .fetch("c", int.class)
+        );
+    }
+
+    @Test
     public void testNaturalJoin() throws Exception {
         boolean unqualified = false;
         if (asList(HSQLDB).contains(dialect().family()))
@@ -496,6 +651,28 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     }
 
     @Test
+    public void testJoinOnKeyWithAlias() throws Exception {
+
+        // Test using unambiguous keys
+        // ---------------------------
+        Table<B> b = TBook().as("b");
+        Table<S> bs = TBookStore().as("bs");
+        Result<Record2<Integer, String>> result4 =
+        create().select(b.field(TBook_ID()), bs.field(TBookStore_NAME()))
+                .from(b)
+                .join(TBookToBookStore()).onKey()
+                .join(bs).onKey()
+                .orderBy(b.field(TBook_ID()), bs.field(TBookStore_NAME()))
+                .fetch();
+
+        assertEquals(6, result4.size());
+        assertEquals(asList(1, 1, 2, 3, 3, 3), result4.getValues(0));
+        assertEquals(asList(
+            "Ex Libris", "Orell Füssli", "Orell Füssli",
+            "Buchhandlung im Volkshaus", "Ex Libris", "Orell Füssli"), result4.getValues(1));
+    }
+
+    @Test
     public void testInverseAndNestedJoin() throws Exception {
 
         // [#1086] TODO: Fix this for SQLite
@@ -620,12 +797,17 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
                 break;
             }
         }
+    }
+
+    @Test
+    public void testFullOuterJoin() throws Exception {
 
         // Test FULL OUTER JOIN
         // --------------------
 
-        switch (dialect()) {
+        switch (dialect().family()) {
             /* [pro] xx
+            xxxx xxxxxxx
             xxxx xxxx
             xx [/pro] */
             case CUBRID:

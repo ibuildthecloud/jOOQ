@@ -9,7 +9,7 @@ package org.jooq.test.postgres.generatedclasses.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TInheritanceAll extends org.jooq.impl.TableImpl<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord> {
 
-	private static final long serialVersionUID = 1175413783;
+	private static final long serialVersionUID = -1979322845;
 
 	/**
 	 * The singleton instance of <code>public.t_inheritance_all</code>
@@ -27,22 +27,22 @@ public class TInheritanceAll extends org.jooq.impl.TableImpl<org.jooq.test.postg
 	/**
 	 * The column <code>public.t_inheritance_all.text_1</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1 = createField("text_1", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1 = createField("text_1", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_inheritance_all.text_1_1</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_1 = createField("text_1_1", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_1 = createField("text_1_1", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_inheritance_all.text_1_2</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_2 = createField("text_1_2", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_2 = createField("text_1_2", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_inheritance_all.text_1_all</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_ALL = createField("text_1_all", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord, java.lang.String> TEXT_1_ALL = createField("text_1_all", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * Create a <code>public.t_inheritance_all</code> table reference
@@ -58,11 +58,22 @@ public class TInheritanceAll extends org.jooq.impl.TableImpl<org.jooq.test.postg
 		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll.T_INHERITANCE_ALL);
 	}
 
+	private TInheritanceAll(java.lang.String alias, org.jooq.Table<org.jooq.test.postgres.generatedclasses.tables.records.TInheritanceAllRecord> aliased) {
+		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, aliased);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll as(java.lang.String alias) {
-		return new org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll(alias);
+		return new org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll(alias, this);
+	}
+
+	/**
+	 * Rename this table
+	 */
+	public org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll rename(java.lang.String name) {
+		return new org.jooq.test.postgres.generatedclasses.tables.TInheritanceAll(name, null);
 	}
 }

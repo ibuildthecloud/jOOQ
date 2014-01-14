@@ -48,6 +48,7 @@ import static org.jooq.conf.ParamType.INLINED;
 import static org.jooq.conf.SettingsTools.updatablePrimaryKeys;
 import static org.jooq.impl.DSL.concat;
 import static org.jooq.impl.DSL.escape;
+import static org.jooq.impl.DSL.fieldByName;
 import static org.jooq.impl.DSL.getDataType;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.nullSafe;
@@ -109,6 +110,7 @@ import org.jooq.Field;
 import org.jooq.Param;
 import org.jooq.QueryPart;
 import org.jooq.Record;
+import org.jooq.RecordType;
 import org.jooq.RenderContext;
 import org.jooq.Result;
 import org.jooq.Row;
@@ -232,6 +234,14 @@ final class Utils {
      * window specifications.
      */
     static final String          DATA_WINDOW_DEFINITIONS                      = "org.jooq.configuration.local-window-definitions";
+
+    /**
+     * [#2744] Currently rendering the DB2 FINAL TABLE clause.
+     * <p>
+     * In DB2, a <code>FINAL TABLE (INSERT ...)</code> clause exists, which
+     * corresponds to the PostgreSQL <code>INSERT .. RETURNING</code> clause.
+     */
+    static final String          DATA_RENDERING_DB2_FINAL_TABLE_CLAUSE        = "org.jooq.configuration.rendering-db2-final-table-clause";
 
     // ------------------------------------------------------------------------
     // Other constants
@@ -405,7 +415,7 @@ final class Utils {
         return configuration(configuration).settings();
     }
 
-    private static final boolean attachRecords(Configuration configuration) {
+    static final boolean attachRecords(Configuration configuration) {
         if (configuration != null) {
             Settings settings = configuration.settings();
 
@@ -748,6 +758,70 @@ final class Utils {
                 result.add(field(values[i], types[i]));
             }
         }
+
+        return result;
+    }
+
+    /**
+     * Return a list of unqualified {@link Field}s.
+     */
+    static final List<Field<?>> unqualify(List<? extends Field<?>> fields) {
+        QueryPartList<Field<?>> result = new QueryPartList<Field<?>>();
+
+        for (Field<?> field : fields)
+            result.add(fieldByName(field.getName()));
+
+        return result;
+    }
+
+    /**
+     * A utility method that fails with an exception if
+     * {@link Row#indexOf(Field)} doesn't return any index.
+     */
+    static final int indexOrFail(Row row, Field<?> field) {
+        int result = row.indexOf(field);
+
+        if (result < 0)
+            throw new IllegalArgumentException("Field (" + field + ") is not contained in Row " + row);
+
+        return result;
+    }
+
+    /**
+     * A utility method that fails with an exception if
+     * {@link Row#indexOf(String)} doesn't return any index.
+     */
+    static final int indexOrFail(Row row, String fieldName) {
+        int result = row.indexOf(fieldName);
+
+        if (result < 0)
+            throw new IllegalArgumentException("Field (" + fieldName + ") is not contained in Row " + row);
+
+        return result;
+    }
+
+    /**
+     * A utility method that fails with an exception if
+     * {@link RecordType#indexOf(Field)} doesn't return any index.
+     */
+    static final int indexOrFail(RecordType<?> row, Field<?> field) {
+        int result = row.indexOf(field);
+
+        if (result < 0)
+            throw new IllegalArgumentException("Field (" + field + ") is not contained in RecordType " + row);
+
+        return result;
+    }
+
+    /**
+     * A utility method that fails with an exception if
+     * {@link RecordType#indexOf(String)} doesn't return any index.
+     */
+    static final int indexOrFail(RecordType<?> row, String fieldName) {
+        int result = row.indexOf(fieldName);
+
+        if (result < 0)
+            throw new IllegalArgumentException("Field (" + fieldName + ") is not contained in RecordType " + row);
 
         return result;
     }
@@ -1293,7 +1367,7 @@ final class Utils {
      */
     static final Field<String> escapeForLike(Object value, Configuration configuration) {
         if (value != null && value.getClass() == String.class) {
-            
+
             /* [pro] xx
             xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxxxx x
                 xxxxxx xxxxxxx x xxxxx x xxxxx

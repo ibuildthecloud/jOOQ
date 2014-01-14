@@ -9,7 +9,7 @@ package org.jooq.test.postgres.generatedclasses.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TInheritance_1_2 extends org.jooq.impl.TableImpl<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record> {
 
-	private static final long serialVersionUID = 1286582523;
+	private static final long serialVersionUID = -993451127;
 
 	/**
 	 * The singleton instance of <code>public.t_inheritance_1_2</code>
@@ -27,12 +27,12 @@ public class TInheritance_1_2 extends org.jooq.impl.TableImpl<org.jooq.test.post
 	/**
 	 * The column <code>public.t_inheritance_1_2.text_1</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record, java.lang.String> TEXT_1 = createField("text_1", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record, java.lang.String> TEXT_1 = createField("text_1", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_inheritance_1_2.text_1_2</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record, java.lang.String> TEXT_1_2 = createField("text_1_2", org.jooq.impl.SQLDataType.CLOB, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record, java.lang.String> TEXT_1_2 = createField("text_1_2", org.jooq.impl.SQLDataType.CLOB.defaulted(true), this);
 
 	/**
 	 * Create a <code>public.t_inheritance_1_2</code> table reference
@@ -48,11 +48,22 @@ public class TInheritance_1_2 extends org.jooq.impl.TableImpl<org.jooq.test.post
 		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2.T_INHERITANCE_1_2);
 	}
 
+	private TInheritance_1_2(java.lang.String alias, org.jooq.Table<org.jooq.test.postgres.generatedclasses.tables.records.TInheritance_1_2Record> aliased) {
+		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, aliased);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2 as(java.lang.String alias) {
-		return new org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2(alias);
+		return new org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2(alias, this);
+	}
+
+	/**
+	 * Rename this table
+	 */
+	public org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2 rename(java.lang.String name) {
+		return new org.jooq.test.postgres.generatedclasses.tables.TInheritance_1_2(name, null);
 	}
 }

@@ -9,7 +9,7 @@ package org.jooq.test.postgres.generatedclasses.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TExoticTypes extends org.jooq.impl.TableImpl<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord> {
 
-	private static final long serialVersionUID = 613128639;
+	private static final long serialVersionUID = 66104416;
 
 	/**
 	 * The singleton instance of <code>public.t_exotic_types</code>
@@ -27,17 +27,17 @@ public class TExoticTypes extends org.jooq.impl.TableImpl<org.jooq.test.postgres
 	/**
 	 * The column <code>public.t_exotic_types.id</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.lang.Integer> ID = createField("id", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.lang.Integer> ID = createField("id", org.jooq.impl.SQLDataType.INTEGER.nullable(false).defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_exotic_types.uu</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.util.UUID> UU = createField("uu", org.jooq.impl.SQLDataType.UUID, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.util.UUID> UU = createField("uu", org.jooq.impl.SQLDataType.UUID.defaulted(true), this);
 
 	/**
 	 * The column <code>public.t_exotic_types.js</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.lang.Object> JS = createField("js", org.jooq.impl.SQLDataType.OTHER, this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord, java.lang.Object> JS = createField("js", org.jooq.impl.SQLDataType.OTHER.defaulted(true), this);
 
 	/**
 	 * Create a <code>public.t_exotic_types</code> table reference
@@ -51,6 +51,10 @@ public class TExoticTypes extends org.jooq.impl.TableImpl<org.jooq.test.postgres
 	 */
 	public TExoticTypes(java.lang.String alias) {
 		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, org.jooq.test.postgres.generatedclasses.tables.TExoticTypes.T_EXOTIC_TYPES);
+	}
+
+	private TExoticTypes(java.lang.String alias, org.jooq.Table<org.jooq.test.postgres.generatedclasses.tables.records.TExoticTypesRecord> aliased) {
+		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, aliased);
 	}
 
 	/**
@@ -74,6 +78,13 @@ public class TExoticTypes extends org.jooq.impl.TableImpl<org.jooq.test.postgres
 	 */
 	@Override
 	public org.jooq.test.postgres.generatedclasses.tables.TExoticTypes as(java.lang.String alias) {
-		return new org.jooq.test.postgres.generatedclasses.tables.TExoticTypes(alias);
+		return new org.jooq.test.postgres.generatedclasses.tables.TExoticTypes(alias, this);
+	}
+
+	/**
+	 * Rename this table
+	 */
+	public org.jooq.test.postgres.generatedclasses.tables.TExoticTypes rename(java.lang.String name) {
+		return new org.jooq.test.postgres.generatedclasses.tables.TExoticTypes(name, null);
 	}
 }

@@ -9,7 +9,7 @@ package org.jooq.test.postgres.generatedclasses.tables;
 @java.lang.SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class XTestCase_2025 extends org.jooq.impl.TableImpl<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record> {
 
-	private static final long serialVersionUID = -1390590980;
+	private static final long serialVersionUID = -1153412020;
 
 	/**
 	 * The singleton instance of <code>public.x_test_case_2025</code>
@@ -27,12 +27,12 @@ public class XTestCase_2025 extends org.jooq.impl.TableImpl<org.jooq.test.postgr
 	/**
 	 * The column <code>public.x_test_case_2025.ref_id</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record, java.lang.Integer> REF_ID = createField("ref_id", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record, java.lang.Integer> REF_ID = createField("ref_id", org.jooq.impl.SQLDataType.INTEGER.nullable(false).defaulted(true), this);
 
 	/**
 	 * The column <code>public.x_test_case_2025.ref_name</code>. 
 	 */
-	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record, java.lang.String> REF_NAME = createField("ref_name", org.jooq.impl.SQLDataType.VARCHAR.length(10).nullable(false), this);
+	public final org.jooq.TableField<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record, java.lang.String> REF_NAME = createField("ref_name", org.jooq.impl.SQLDataType.VARCHAR.length(10).nullable(false).defaulted(true), this);
 
 	/**
 	 * Create a <code>public.x_test_case_2025</code> table reference
@@ -48,6 +48,10 @@ public class XTestCase_2025 extends org.jooq.impl.TableImpl<org.jooq.test.postgr
 		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025.X_TEST_CASE_2025);
 	}
 
+	private XTestCase_2025(java.lang.String alias, org.jooq.Table<org.jooq.test.postgres.generatedclasses.tables.records.XTestCase_2025Record> aliased) {
+		super(alias, org.jooq.test.postgres.generatedclasses.Public.PUBLIC, aliased);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -61,6 +65,13 @@ public class XTestCase_2025 extends org.jooq.impl.TableImpl<org.jooq.test.postgr
 	 */
 	@Override
 	public org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025 as(java.lang.String alias) {
-		return new org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025(alias);
+		return new org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025(alias, this);
+	}
+
+	/**
+	 * Rename this table
+	 */
+	public org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025 rename(java.lang.String name) {
+		return new org.jooq.test.postgres.generatedclasses.tables.XTestCase_2025(name, null);
 	}
 }

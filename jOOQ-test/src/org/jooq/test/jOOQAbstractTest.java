@@ -305,6 +305,7 @@ public abstract class jOOQAbstractTest<
                 }
             }
             catch (Exception e) {
+                log.debug("Ignoring", e.getMessage().replaceAll("\n", " "));
 
                 // Ignore all errors on DROP statements
                 if (sql.trim().startsWith("DROP")) {
@@ -1006,6 +1007,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testInsertDefaultValues() throws Exception {
+        new InsertUpdateTests(this).testInsertDefaultValues();
+    }
+
+    @Test
     public void testTableMapping() throws Exception {
         new SchemaAndMappingTests(this).testTableMapping();
     }
@@ -1078,6 +1084,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testFetchGroupsPOJO() throws Exception {
         new FetchTests(this).testFetchGroupsPOJO();
+    }
+
+    @Test
+    public void testFetchGroupsMapper() throws Exception {
+        new FetchTests(this).testFetchGroupsMapper();
     }
 
     @Test
@@ -1306,6 +1317,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testBigDecimalPredicates() throws Exception {
+        new PredicateTests(this).testBigDecimalPredicates();
+    }
+
+    @Test
     public void testRowValueExpressionConditions() throws Exception {
         new RowValueExpressionTests(this).testRowValueExpressionConditions();
     }
@@ -1496,6 +1512,16 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testFetchIntoTableRecordsWithColumnAmbiguities() throws Exception {
+        new FetchTests(this).testFetchIntoTableRecordsWithColumnAmbiguities();
+    }
+
+    @Test
+    public void testFetchAttachables() throws Exception {
+        new FetchTests(this).testFetchAttachables();
+    }
+
+    @Test
     public void testFetchIntoTableRecordsWithUDTs() throws Exception {
         new FetchTests(this).testFetchIntoTableRecordsWithUDTs();
     }
@@ -1543,6 +1569,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testRecordChanged() throws Exception {
         new RecordTests(this).testRecordChanged();
+    }
+
+    @Test
+    public void testRecordChangedOnGeneratedMethods() throws Exception {
+        new RecordTests(this).testRecordChangedOnGeneratedMethods();
     }
 
     @Test
@@ -1791,6 +1822,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testStoreVsExecuteInsert() throws Exception {
+        new CRUDTests(this).testStoreVsExecuteInsert();
+    }
+
+    @Test
     public void testFetchFromTXT() throws Exception {
         new FormatTests(this).testFetchFromTXT();
     }
@@ -1936,6 +1972,16 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testCrossApply() throws Exception {
+        new JoinTests(this).testCrossApply();
+    }
+
+    @Test
+    public void testLateralJoin() throws Exception {
+        new JoinTests(this).testLateralJoin();
+    }
+
+    @Test
     public void testNaturalJoin() throws Exception {
         new JoinTests(this).testNaturalJoin();
     }
@@ -1951,6 +1997,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testJoinOnKeyWithAlias() throws Exception {
+        new JoinTests(this).testJoinOnKeyWithAlias();
+    }
+
+    @Test
     public void testInverseAndNestedJoin() throws Exception {
         new JoinTests(this).testInverseAndNestedJoin();
     }
@@ -1958,6 +2009,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testOuterJoin() throws Exception {
         new JoinTests(this).testOuterJoin();
+    }
+
+    @Test
+    public void testFullOuterJoin() throws Exception {
+        new JoinTests(this).testFullOuterJoin();
     }
 
     @Test
@@ -2066,8 +2122,33 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
-    public void testFunctionsOnNumbers() throws Exception {
-        new FunctionTests(this).testFunctionsOnNumbers();
+    public void testFunctionsOnNumbers_RAND() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_RAND();
+    }
+
+    @Test
+    public void testFunctionsOnNumbers_ROUND_FLOOR_CEIL_TRUNC() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_ROUND_FLOOR_CEIL_TRUNC();
+    }
+
+    @Test
+    public void testFunctionsOnNumbers_GREATEST_LEAST() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_GREATEST_LEAST();
+    }
+
+    @Test
+    public void testFunctionsOnNumbers_TRIGONOMETRY() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_TRIGONOMETRY();
+    }
+
+    @Test
+    public void testFunctionsOnNumbers_SIGN() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_SIGN();
+    }
+
+    @Test
+    public void testFunctionsOnNumbers_ABS() throws Exception {
+        new FunctionTests(this).testFunctionsOnNumbers_ABS();
     }
 
     @Test

@@ -43,6 +43,7 @@ package org.jooq.impl;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.jooq.impl.Utils.indexOrFail;
 import static org.jooq.tools.StringUtils.abbreviate;
 import static org.jooq.tools.StringUtils.leftPad;
 import static org.jooq.tools.StringUtils.rightPad;
@@ -194,6 +195,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     }
 
     @Override
+    @Deprecated
     public final <T> T getValue(int index, Field<T> field, T defaultValue) {
         return get(index).getValue(field, defaultValue);
     }
@@ -204,6 +206,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     }
 
     @Override
+    @Deprecated
     public final Object getValue(int index, int fieldIndex, Object defaultValue) {
         return get(index).getValue(fieldIndex, defaultValue);
     }
@@ -214,6 +217,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     }
 
     @Override
+    @Deprecated
     public final Object getValue(int index, String fieldName, Object defaultValue) {
         return get(index).getValue(fieldName, defaultValue);
     }
@@ -221,7 +225,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     @SuppressWarnings("unchecked")
     @Override
     public final <T> List<T> getValues(Field<T> field) {
-        return (List<T>) getValues(fieldsRow().indexOf(field));
+        return (List<T>) getValues(indexOrFail(fieldsRow(), field));
     }
 
     @Override
@@ -771,7 +775,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     @SuppressWarnings("unchecked")
     @Override
     public final <K> Map<K, R> intoMap(Field<K> key) {
-        int index = fieldsRow().indexOf(key);
+        int index = indexOrFail(fieldsRow(), key);
         Map<K, R> map = new LinkedHashMap<K, R>();
 
         for (R record : this) {
@@ -786,8 +790,8 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     @SuppressWarnings("unchecked")
     @Override
     public final <K, V> Map<K, V> intoMap(Field<K> key, Field<V> value) {
-        int kIndex = fieldsRow().indexOf(key);
-        int vIndex = fieldsRow().indexOf(value);
+        int kIndex = indexOrFail(fieldsRow(), key);
+        int vIndex = indexOrFail(fieldsRow(), value);
 
         Map<K, V> map = new LinkedHashMap<K, V>();
 
@@ -826,8 +830,11 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
 
     @Override
     public final <E> Map<List<?>, E> intoMap(Field<?>[] keys, Class<? extends E> type) {
-        RecordMapper<R, E> mapper = Utils.configuration(this).recordMapperProvider().provide(fields, type);
+        return intoMap(keys, Utils.configuration(this).recordMapperProvider().provide(fields, type));
+    }
 
+    @Override
+    public final <E> Map<List<?>, E> intoMap(Field<?>[] keys, RecordMapper<? super R, E> mapper) {
         if (keys == null) {
             keys = new Field[0];
         }
@@ -848,11 +855,15 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public final <K, E> Map<K, E> intoMap(Field<K> key, Class<? extends E> type) {
-        RecordMapper<R, E> mapper = Utils.configuration(this).recordMapperProvider().provide(fields, type);
-        int index = fieldsRow().indexOf(key);
+        return intoMap(key, Utils.configuration(this).recordMapperProvider().provide(fields, type));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public final <K, E> Map<K, E> intoMap(Field<K> key, RecordMapper<? super R, E> mapper) {
+        int index = indexOrFail(fieldsRow(), key);
         Map<K, E> map = new LinkedHashMap<K, E>();
 
         for (R record : this) {
@@ -867,7 +878,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     @SuppressWarnings("unchecked")
     @Override
     public final <K> Map<K, Result<R>> intoGroups(Field<K> key) {
-        int index = fieldsRow().indexOf(key);
+        int index = indexOrFail(fieldsRow(), key);
         Map<K, Result<R>> map = new LinkedHashMap<K, Result<R>>();
 
         for (R record : this) {
@@ -888,8 +899,8 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
     @SuppressWarnings("unchecked")
     @Override
     public final <K, V> Map<K, List<V>> intoGroups(Field<K> key, Field<V> value) {
-        int kIndex = fieldsRow().indexOf(key);
-        int vIndex = fieldsRow().indexOf(value);
+        int kIndex = indexOrFail(fieldsRow(), key);
+        int vIndex = indexOrFail(fieldsRow(), value);
 
         Map<K, List<V>> map = new LinkedHashMap<K, List<V>>();
 
@@ -937,11 +948,15 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public final <K, E> Map<K, List<E>> intoGroups(Field<K> key, Class<? extends E> type) {
-        RecordMapper<R, E> mapper = Utils.configuration(this).recordMapperProvider().provide(fields, type);
-        int index = fieldsRow().indexOf(key);
+        return intoGroups(key, Utils.configuration(this).recordMapperProvider().provide(fields, type));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public final <K, E> Map<K, List<E>> intoGroups(Field<K> key, RecordMapper<? super R, E> mapper) {
+        int index = indexOrFail(fieldsRow(), key);
         Map<K, List<E>> map = new LinkedHashMap<K, List<E>>();
 
         for (R record : this) {
@@ -961,8 +976,11 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
 
     @Override
     public final <E> Map<Record, List<E>> intoGroups(Field<?>[] keys, Class<? extends E> type) {
-        RecordMapper<R, E> mapper = Utils.configuration(this).recordMapperProvider().provide(fields, type);
+        return intoGroups(keys, Utils.configuration(this).recordMapperProvider().provide(fields, type));
+    }
 
+    @Override
+    public final <E> Map<Record, List<E>> intoGroups(Field<?>[] keys, RecordMapper<? super R, E> mapper) {
         if (keys == null) {
             keys = new Field[0];
         }
@@ -1014,10 +1032,9 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
         return (T[]) Convert.convertArray(intoArray(fieldIndex), type);
     }
 
-    @SuppressWarnings("cast")
     @Override
     public final <U> U[] intoArray(int fieldIndex, Converter<?, U> converter) {
-        return (U[]) Convert.convertArray(intoArray(fieldIndex), converter);
+        return Convert.convertArray(intoArray(fieldIndex), converter);
     }
 
     @Override
@@ -1033,10 +1050,9 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
         return (T[]) Convert.convertArray(intoArray(fieldName), type);
     }
 
-    @SuppressWarnings("cast")
     @Override
     public final <U> U[] intoArray(String fieldName, Converter<?, U> converter) {
-        return (U[]) Convert.convertArray(intoArray(fieldName), converter);
+        return Convert.convertArray(intoArray(fieldName), converter);
     }
 
     @SuppressWarnings("unchecked")
@@ -1051,10 +1067,9 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
         return (T[]) Convert.convertArray(intoArray(field), type);
     }
 
-    @SuppressWarnings("cast")
     @Override
     public final <T, U> U[] intoArray(Field<T> field, Converter<? super T, U> converter) {
-        return (U[]) Convert.convertArray(intoArray(field), converter);
+        return Convert.convertArray(intoArray(field), converter);
     }
 
     @Override
@@ -1124,7 +1139,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
 
     @Override
     public final <T> Result<R> sortAsc(Field<T> field, Comparator<? super T> comparator) {
-        return sortAsc(fieldsRow().indexOf(field), comparator);
+        return sortAsc(indexOrFail(fieldsRow(), field), comparator);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -1135,7 +1150,7 @@ class ResultImpl<R extends Record> implements Result<R>, AttachableInternal {
 
     @Override
     public final Result<R> sortAsc(String fieldName, Comparator<?> comparator) {
-        return sortAsc(fieldsRow().indexOf(fieldName), comparator);
+        return sortAsc(indexOrFail(fieldsRow(), fieldName), comparator);
     }
 
     @Override

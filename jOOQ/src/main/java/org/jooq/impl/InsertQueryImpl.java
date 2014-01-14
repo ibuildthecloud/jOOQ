@@ -47,8 +47,12 @@ import static org.jooq.Clause.INSERT_INSERT_INTO;
 import static org.jooq.Clause.INSERT_ON_DUPLICATE_KEY_UPDATE;
 import static org.jooq.Clause.INSERT_ON_DUPLICATE_KEY_UPDATE_ASSIGNMENT;
 import static org.jooq.Clause.INSERT_RETURNING;
+// ...
 import static org.jooq.SQLDialect.MARIADB;
 import static org.jooq.SQLDialect.MYSQL;
+import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.Utils.DATA_RENDERING_DB2_FINAL_TABLE_CLAUSE;
+import static org.jooq.impl.Utils.unqualify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +68,7 @@ import org.jooq.InsertQuery;
 import org.jooq.Merge;
 import org.jooq.MergeNotMatchedStep;
 import org.jooq.MergeOnConditionStep;
+import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.RenderContext;
 import org.jooq.Table;
@@ -79,6 +84,7 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
 
     private final FieldMapForUpdate  updateMap;
     private final FieldMapsForInsert insertMaps;
+    private boolean                  defaultValues;
     private boolean                  onDuplicateKeyUpdate;
     private boolean                  onDuplicateKeyIgnore;
 
@@ -87,13 +93,6 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
 
         updateMap = new FieldMapForUpdate(INSERT_ON_DUPLICATE_KEY_UPDATE_ASSIGNMENT);
         insertMaps = new FieldMapsForInsert();
-    }
-
-    @Override
-    public final void setRecord(R record) {
-        for (Field<?> field : record.fields()) {
-            addValue(record, field);
-        }
     }
 
     @Override
@@ -140,12 +139,28 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
     }
 
     @Override
+    public final void setDefaultValues() {
+        defaultValues = true;
+    }
+
+    @Override
     public final void addValues(Map<? extends Field<?>, ?> map) {
         insertMaps.getMap().set(map);
     }
 
     @Override
     public final void toSQL(RenderContext context) {
+
+        /* [pro] xx
+        xx xxxxxxxxxxxxxxxxxxxxx
+                xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxx
+                xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxx x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx
+        x
+        xxxx
+        xx [/pro] */
 
         // ON DUPLICATE KEY UPDATE clause
         // ------------------------------
@@ -259,8 +274,25 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
         context.end(INSERT_RETURNING);
     }
 
+    /* [pro] xx
+    xxxxx xxxxxxxxx xxxxxxxxxxxxxxxxxx x
+        xxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxx xxxxxx
+    x
+    xx [/pro] */
+
     @Override
     public final void bind(BindContext context) {
+
+        /* [pro] xx
+        xx xxxxxxxxxxxxxxxxxxxxx
+                xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxx
+                xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxx x
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx
+        x
+        xxxx
+        xx [/pro] */
 
         // ON DUPLICATE KEY UPDATE clause
         // ------------------------------
@@ -361,11 +393,49 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
                .keyword((onDuplicateKeyIgnore && asList(MARIADB, MYSQL).contains(context.configuration().dialect())) ? "ignore " : "")
                .keyword("into")
                .sql(" ")
-               .visit(getInto())
-               .sql(" ");
-        insertMaps.insertMaps.get(0).toSQLReferenceKeys(context);
-        context.end(INSERT_INSERT_INTO)
-               .visit(insertMaps);
+               .visit(getInto());
+
+        // [#1506] with DEFAULT VALUES, we might not have any columns to render
+        if (insertMaps.isExecutable()) {
+            context.sql(" ");
+            insertMaps.insertMaps.get(0).toSQLReferenceKeys(context);
+        }
+
+        context.end(INSERT_INSERT_INTO);
+
+        if (defaultValues) {
+            switch (context.configuration().dialect().family()) {
+                /* [pro] xx
+                xxxx xxxxxxx
+                xxxx xxxx
+                xxxx xxxxxxx
+                xx [/pro] */
+
+                case DERBY:
+                case MARIADB:
+                case MYSQL:
+                    context.sql(" ").keyword("values").sql("(");
+
+                    int count = getInto().fields().length;
+                    String separator = "";
+
+                    for (int i = 0; i < count; i++) {
+                        context.sql(separator);
+                        context.keyword("default");
+                        separator = ", ";
+                    }
+
+                    context.sql(")");
+                    break;
+
+                default:
+                    context.sql(" ").keyword("default values");
+                    break;
+            }
+        }
+        else {
+            context.visit(insertMaps);
+        }
     }
 
     private final void bindInsert(BindContext context) {
@@ -378,13 +448,13 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
 
     @SuppressWarnings("unchecked")
     private final Merge<R> toMerge(Configuration configuration) {
-        Table<R> into = getInto();
+        Table<R> i = getInto();
 
-        if (into.getPrimaryKey() != null) {
+        if (i.getPrimaryKey() != null) {
             Condition condition = null;
             List<Field<?>> key = new ArrayList<Field<?>>();
 
-            for (Field<?> f : into.getPrimaryKey().getFields()) {
+            for (Field<?> f : i.getPrimaryKey().getFields()) {
                 Field<Object> field = (Field<Object>) f;
                 Field<Object> value = (Field<Object>) insertMaps.getMap().get(field);
 
@@ -400,7 +470,7 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
             }
 
             MergeOnConditionStep<R> on =
-            create(configuration).mergeInto(into)
+            create(configuration).mergeInto(i)
                                  .usingDual()
                                  .on(condition);
 
@@ -422,6 +492,6 @@ class InsertQueryImpl<R extends Record> extends AbstractStoreQuery<R> implements
 
     @Override
     public final boolean isExecutable() {
-        return insertMaps.isExecutable();
+        return insertMaps.isExecutable() || defaultValues;
     }
 }
