@@ -46,14 +46,11 @@ import static org.jooq.SQLDialect.CUBRID;
 import static org.jooq.SQLDialect.POSTGRES;
 import static org.jooq.conf.ParamType.INLINED;
 import static org.jooq.conf.SettingsTools.updatablePrimaryKeys;
-import static org.jooq.impl.DSL.concat;
 import static org.jooq.impl.DSL.escape;
 import static org.jooq.impl.DSL.fieldByName;
 import static org.jooq.impl.DSL.getDataType;
-import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.nullSafe;
 import static org.jooq.impl.DSL.val;
-import static org.jooq.impl.DefaultExecuteContext.localConnection;
 import static org.jooq.tools.jdbc.JDBCUtils.safeFree;
 import static org.jooq.tools.jdbc.JDBCUtils.wasNull;
 import static org.jooq.tools.reflect.Reflect.accessible;
@@ -1464,6 +1461,9 @@ final class Utils {
      * Check if JPA classes can be loaded. This is only done once per JVM!
      */
     private static final boolean isJPAAvailable() {
+        if (true) {
+            return false;
+        }
         if (isJPAAvailable == null) {
             try {
                 Class.forName(Column.class.getName());
