@@ -41,6 +41,9 @@
 package org.jooq.util;
 
 
+import static org.jooq.tools.StringUtils.defaultIfBlank;
+import static org.jooq.tools.StringUtils.defaultString;
+
 import java.io.File;
 import java.lang.reflect.TypeVariable;
 import java.sql.SQLException;
@@ -276,7 +279,7 @@ public class JavaGenerator extends AbstractGenerator {
             generateEnums(schema);
         }
 
-        if (database.getRoutines(schema).size() > 0 || database.getTables(schema).size() > 0) {
+        if (database.getRoutines(schema).size() > 0 || hasTableValuedFunctions(schema)) {
             generateRoutines(schema);
         }
 
@@ -286,6 +289,16 @@ public class JavaGenerator extends AbstractGenerator {
 
         // XXX [#651] Refactoring-cursor
         watch.splitInfo("GENERATION FINISHED!");
+    }
+
+    private boolean hasTableValuedFunctions(SchemaDefinition schema) {
+        for (TableDefinition table : database.getTables(schema)) {
+            if (table.isTableValuedFunction()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected void generateRelations(SchemaDefinition schema) {
@@ -548,7 +561,7 @@ public class JavaGenerator extends AbstractGenerator {
             final String type = getJavaType(column.getType());
             final String name = column.getQualifiedOutputName();
 
-            out.tab(1).javadoc("Setter for <code>%s</code>. %s", name, comment);
+            out.tab(1).javadoc("Setter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
             out.tab(1).overrideIf(generateInterfaces() && !generateImmutablePojos());
             out.tab(1).println("public %s %s(%s value) {", setterReturnType, setter, type);
             out.tab(2).println("setValue(%s, value);", i);
@@ -556,7 +569,7 @@ public class JavaGenerator extends AbstractGenerator {
                 out.tab(2).println("return this;");
             out.tab(1).println("}");
 
-            out.tab(1).javadoc("Getter for <code>%s</code>. %s", name, comment);
+            out.tab(1).javadoc("Getter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
             printColumnJPAAnnotation(out, column);
             printColumnValidationAnnotation(out, column);
             out.tab(1).overrideIf(generateInterfaces());
@@ -745,11 +758,11 @@ public class JavaGenerator extends AbstractGenerator {
             final String name = column.getQualifiedOutputName();
 
             if (!generateImmutablePojos()) {
-                out.tab(1).javadoc("Setter for <code>%s</code>. %s", name, comment);
+                out.tab(1).javadoc("Setter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
                 out.tab(1).println("public %s %s(%s value);", setterReturnType, setter, type);
             }
 
-            out.tab(1).javadoc("Getter for <code>%s</code>. %s", name, comment);
+            out.tab(1).javadoc("Getter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
             printColumnJPAAnnotation(out, column);
             printColumnValidationAnnotation(out, column);
             out.tab(1).println("public %s %s();", type, getter);
@@ -827,7 +840,7 @@ public class JavaGenerator extends AbstractGenerator {
             final String attrName = attribute.getName();
             final String attrComment = StringUtils.defaultString(attribute.getComment());
 
-            out.tab(1).javadoc("The attribute <code>%s</code>. %s", attribute.getQualifiedOutputName(), attrComment);
+            out.tab(1).javadoc("The attribute <code>%s</code>.%s", attribute.getQualifiedOutputName(), defaultIfBlank(" " + attrComment, ""));
             out.tab(1).println("public static final %s<%s, %s> %s = createField(\"%s\", %s, %s);",
                 UDTField.class, recordType, attrType, attrId, attrName, attrTypeRef, udtId);
         }
@@ -921,14 +934,14 @@ public class JavaGenerator extends AbstractGenerator {
             final String id = getStrategy().getFullJavaIdentifier(attribute);
             final String name = attribute.getQualifiedOutputName();
 
-            out.tab(1).javadoc("Setter for <code>%s</code>. %s", name, comment);
+            out.tab(1).javadoc("Setter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
             out.tab(1).println("public %s %s(%s value) {", setterReturnType, setter, type);
             out.tab(2).println("setValue(%s, value);", id);
             if (fluentSetters())
                 out.tab(2).println("return this;");
             out.tab(1).println("}");
 
-            out.tab(1).javadoc("Getter for <code>%s</code>. %s", name, comment);
+            out.tab(1).javadoc("Getter for <code>%s</code>.%s", name, defaultIfBlank(" " + comment, ""));
             out.tab(1).println("public %s %s() {", type, getter);
             out.tab(2).println("return getValue(%s);", id);
             out.tab(1).println("}");
@@ -1579,6 +1592,7 @@ public class JavaGenerator extends AbstractGenerator {
         final String fullTableId = getStrategy().getFullJavaIdentifier(table);
         final String recordType = getStrategy().getFullJavaClassName(table, Mode.RECORD);
         final List<String> interfaces = getStrategy().getJavaClassImplements(table, Mode.DEFAULT);
+        final String comment = defaultString(table.getComment());
 
         log.info("Generating table", getStrategy().getFileName(table) +
             " [input=" + table.getInputName() +
@@ -1605,9 +1619,9 @@ public class JavaGenerator extends AbstractGenerator {
             String isStatic = generateInstanceFields() ? "" : "static ";
             String tableRef = generateInstanceFields() ? "this" : getStrategy().getJavaIdentifier(table);
 
-            out.tab(1).javadoc("The column <code>%s</code>. %s", column.getQualifiedOutputName(), columnComment);
-            out.tab(1).println("public %sfinal %s<%s, %s> %s = createField(\"%s\", %s, %s);",
-                isStatic, TableField.class, recordType, columnType, columnId, columnName, columnTypeRef, tableRef);
+            out.tab(1).javadoc("The column <code>%s</code>.%s", column.getQualifiedOutputName(), defaultIfBlank(" " + columnComment, ""));
+            out.tab(1).println("public %sfinal %s<%s, %s> %s = createField(\"%s\", %s, %s, \"%s\");",
+                isStatic, TableField.class, recordType, columnType, columnId, columnName, columnTypeRef, tableRef, escapeString(columnComment));
         }
 
         // [#1255] With instance fields, the table constructor may
@@ -1621,7 +1635,7 @@ public class JavaGenerator extends AbstractGenerator {
             out.tab(1).println("private %s() {", className);
         }
 
-        out.tab(2).println("super(\"%s\", %s);", table.getOutputName(), getStrategy().getFullJavaIdentifier(schema));
+        out.tab(2).println("this(\"%s\", null);", table.getOutputName());
         out.tab(1).println("}");
 
         // [#117] With instance fields, it makes sense to create a
@@ -1633,22 +1647,19 @@ public class JavaGenerator extends AbstractGenerator {
         if (generateInstanceFields()) {
             out.tab(1).javadoc("Create an aliased <code>%s</code> table reference", table.getQualifiedOutputName());
             out.tab(1).println("public %s(%s alias) {", className, String.class);
-            out.tab(2).println("super(alias, %s, %s);", schemaId, fullTableId);
+            out.tab(2).println("this(alias, %s);", fullTableId);
             out.tab(1).println("}");
         }
 
-        if (table.isTableValuedFunction()) {
-            out.println();
-            out.tab(1).println("private %s(%s alias, %s<%s> aliased, %s<?>[] parameters) {", className, String.class, Table.class, recordType, Field.class);
-            out.tab(2).println("super(alias, %s, aliased, parameters);", schemaId);
-            out.tab(1).println("}");
-        }
-        else {
-            out.println();
-            out.tab(1).println("private %s(%s alias, %s<%s> aliased) {", className, String.class, Table.class, recordType);
-            out.tab(2).println("super(alias, %s, aliased);", schemaId);
-            out.tab(1).println("}");
-        }
+        out.println();
+        out.tab(1).println("private %s(%s alias, %s<%s> aliased) {", className, String.class, Table.class, recordType);
+        out.tab(2).println("this(alias, aliased, null);");
+        out.tab(1).println("}");
+
+        out.println();
+        out.tab(1).println("private %s(%s alias, %s<%s> aliased, %s<?>[] parameters) {", className, String.class, Table.class, recordType, Field.class);
+        out.tab(2).println("super(alias, %s, aliased, parameters, \"%s\");", schemaId, escapeString(comment));
+        out.tab(1).println("}");
 
         // Add primary / unique / foreign key information
         if (generateRelations()) {
@@ -1803,6 +1814,10 @@ public class JavaGenerator extends AbstractGenerator {
         generateTableClassFooter(table, out);
         out.println("}");
         out.close();
+    }
+
+    private String escapeString(String comment) {
+        return comment.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
     }
 
     /**
@@ -2078,7 +2093,7 @@ public class JavaGenerator extends AbstractGenerator {
             final String paramComment = StringUtils.defaultString(parameter.getComment());
             final List<String> isDefaulted = list(parameter.isDefaulted() ? "true" : null);
 
-            out.tab(1).javadoc("The parameter <code>%s</code>. %s", parameter.getQualifiedOutputName(), paramComment);
+            out.tab(1).javadoc("The parameter <code>%s</code>.%s", parameter.getQualifiedOutputName(), defaultIfBlank(" " + paramComment, ""));
             out.tab(1).println("public static final %s<%s> %s = createParameter(\"%s\", %s[[before=, ][%s]]);",
                 Parameter.class, paramType, paramId, paramName, paramTypeRef, isDefaulted);
         }
