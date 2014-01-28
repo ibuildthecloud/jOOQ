@@ -759,6 +759,18 @@ final class Utils {
         return result;
     }
 
+    static final <T> List<Field<T>> inline(T[] values) {
+        List<Field<T>> result = new ArrayList<Field<T>>();
+
+        if (values != null) {
+            for (T value : values) {
+                result.add(DSL.inline(value));
+            }
+        }
+
+        return result;
+    }
+
     /**
      * Return a list of unqualified {@link Field}s.
      */
@@ -1396,7 +1408,7 @@ final class Utils {
 
             /* [pro] xx
             xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxxxx x
-                xxxxxx xxxxxxxxxxxxxxxxxxx xxxxxx xxxxxxxxxxxxx
+                xxxxxx xxxxxxxxxxxxxxxxxxxxxxx xxxxxx xxxxxxxxxxxxxxxxx
             x
             xxxx
             xx [/pro] */

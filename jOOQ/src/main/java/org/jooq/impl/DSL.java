@@ -6142,6 +6142,78 @@ public class DSL {
     }
 
     /**
+     * Gets the SQL Server-style ISNULL(value, defaultValue) function.
+     *
+     * @see #nvl(Field, Field)
+     */
+    @Support
+    @Transition(
+        name = "ISNULL",
+        args = {
+            "Field",
+            "Field"
+        },
+        to = "Function"
+    )
+    public static <T> Field<T> isnull(T value, T defaultValue) {
+        return nvl(value, defaultValue);
+    }
+
+    /**
+     * Gets the SQL Server-style ISNULL(value, defaultValue) function.
+     *
+     * @see #nvl(Field, Field)
+     */
+    @Support
+    @Transition(
+        name = "ISNULL",
+        args = {
+            "Field",
+            "Field"
+        },
+        to = "Function"
+    )
+    public static <T> Field<T> isnull(T value, Field<T> defaultValue) {
+        return nvl(value, defaultValue);
+    }
+
+    /**
+     * Gets the SQL Server-style ISNULL(value, defaultValue) function.
+     *
+     * @see #nvl(Field, Field)
+     */
+    @Support
+    @Transition(
+        name = "ISNULL",
+        args = {
+            "Field",
+            "Field"
+        },
+        to = "Function"
+    )
+    public static <T> Field<T> isnull(Field<T> value, T defaultValue) {
+        return nvl(value, defaultValue);
+    }
+
+    /**
+     * Gets the SQL Server-style ISNULL(value, defaultValue) function.
+     *
+     * @see #nvl(Field, Field)
+     */
+    @Support
+    @Transition(
+        name = "ISNULL",
+        args = {
+            "Field",
+            "Field"
+        },
+        to = "Function"
+    )
+    public static <T> Field<T> isnull(Field<T> value, Field<T> defaultValue) {
+        return nvl(value, defaultValue);
+    }
+
+    /**
      * Gets the Oracle-style NVL(value, defaultValue) function.
      *
      * @see #nvl(Field, Field)
@@ -6810,6 +6882,34 @@ public class DSL {
     @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
     public static Field<String> repeat(Field<String> field, Field<? extends Number> count) {
         return new Repeat(nullSafe(field), nullSafe(count));
+    }
+
+    /**
+     * Get the SQL Server specific <code>SPACE()</code> function.
+     * <p>
+     * This function can be emulated using {@link #repeat(String, int)} in
+     * dialects that do not ship with a native <code>SPACE()</code> function.
+     *
+     * @see <a
+     *      href="http://technet.microsoft.com/en-us/library/ms187950.aspx">http://technet.microsoft.com/en-us/library/ms187950.aspx</a>
+     */
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    public static Field<String> space(int value) {
+        return space(val(value));
+    }
+
+    /**
+     * Get the SQL Server specific <code>SPACE()</code> function.
+     * <p>
+     * This function can be emulated using {@link #repeat(String, int)} in
+     * dialects that do not ship with a native <code>SPACE()</code> function.
+     *
+     * @see <a
+     *      href="http://technet.microsoft.com/en-us/library/ms187950.aspx">http://technet.microsoft.com/en-us/library/ms187950.aspx</a>
+     */
+    @Support({ CUBRID, FIREBIRD, H2, HSQLDB, MARIADB, MYSQL, POSTGRES, SQLITE })
+    public static Field<String> space(Field<Integer> value) {
+        return new Space(nullSafe(value));
     }
 
     /**
