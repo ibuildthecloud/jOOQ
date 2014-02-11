@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -88,6 +88,7 @@ import java.util.UUID;
 import org.jooq.Converter;
 import org.jooq.DSLContext;
 import org.jooq.DataType;
+import org.jooq.DatePart;
 import org.jooq.Field;
 import org.jooq.InsertSetMoreStep;
 import org.jooq.Record;
@@ -102,6 +103,7 @@ import org.jooq.SQLDialect;
 import org.jooq.TableRecord;
 import org.jooq.UpdatableRecord;
 import org.jooq.conf.Settings;
+import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.test.BaseTest;
 import org.jooq.test.jOOQAbstractTest;
@@ -1574,10 +1576,131 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
         assertEquals(new DayToSecond(1, 6), record.getValue("ts2"));
     }
 
+    @Test
+    public void testFunctionsOnDates_DATE_ADD() throws Exception {
+        Calendar cal;
+
+        // Adding
+        cal = cal();
+
+        Record6<Timestamp, Timestamp, Timestamp, Timestamp, Timestamp, Timestamp> r1 = create().select(
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.YEAR)  .as("yy"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.MONTH) .as("mm"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.DAY)   .as("dd"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.HOUR)  .as("hh"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.MINUTE).as("mi"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), 2, DatePart.SECOND).as("ss")
+        ).fetchOne();
+
+        cal = cal(); cal.add(Calendar.YEAR       , 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value1());
+        cal = cal(); cal.add(Calendar.MONTH      , 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value2());
+        cal = cal(); cal.add(Calendar.DAY_OF_YEAR, 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value3());
+        cal = cal(); cal.add(Calendar.HOUR       , 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value4());
+        cal = cal(); cal.add(Calendar.MINUTE     , 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value5());
+        cal = cal(); cal.add(Calendar.SECOND     , 2); assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value6());
+
+        // Subtracting
+        cal = cal();
+
+        Record6<Timestamp, Timestamp, Timestamp, Timestamp, Timestamp, Timestamp> r2 = create().select(
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.YEAR)  .as("yy"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.MONTH) .as("mm"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.DAY)   .as("dd"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.HOUR)  .as("hh"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.MINUTE).as("mi"),
+            DSL.timestampAdd(new Timestamp(cal.getTimeInMillis()), -2, DatePart.SECOND).as("ss")
+        ).fetchOne();
+
+        cal = cal(); cal.add(Calendar.YEAR       , -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value1());
+        cal = cal(); cal.add(Calendar.MONTH      , -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value2());
+        cal = cal(); cal.add(Calendar.DAY_OF_YEAR, -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value3());
+        cal = cal(); cal.add(Calendar.HOUR       , -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value4());
+        cal = cal(); cal.add(Calendar.MINUTE     , -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value5());
+        cal = cal(); cal.add(Calendar.SECOND     , -2); assertEquals(new Timestamp(cal.getTimeInMillis()), r2.value6());
+    }
+
     private Calendar cal() {
+        return cal(0);
+    }
+
+    private Calendar cal(long offset) {
         Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(-3600000);
+        cal.setTimeInMillis(-3600000 + offset);
         return cal;
+    }
+
+    @Test
+    public void testFunctionsOnDates_TRUNC() throws Exception {
+        switch (dialect().family()) {
+            /* [pro] xx
+            xxxx xxxxxxx
+            xxxx xxxx
+            xxxx xxxxxxx
+            xxxx xxxxxxxxxx
+            xxxx xxxxxxx
+            xx [/pro] */
+
+            case DERBY:
+            case FIREBIRD:
+            case H2:
+            case MARIADB:
+            case MYSQL:
+            case SQLITE:
+                log.info("SKIPPING", "TRUNC(datetime) tests");
+                return;
+        }
+
+        Calendar cal;
+
+        cal = cal(-1);
+
+        Record6<Timestamp, Timestamp, Timestamp, Timestamp, Timestamp, Timestamp> r1 = create().select(
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.YEAR)  .as("yy"),
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.MONTH) .as("mm"),
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.DAY)   .as("dd"),
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.HOUR)  .as("hh"),
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.MINUTE).as("mi"),
+            DSL.trunc(new Timestamp(cal.getTimeInMillis()), DatePart.SECOND).as("ss")
+        ).fetchOne();
+
+        cal = cal(-1);
+        cal.set(Calendar.MONTH       , 0);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY , 0);
+        cal.set(Calendar.MINUTE      , 0);
+        cal.set(Calendar.SECOND      , 0);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value1());
+
+        cal = cal(-1);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY , 0);
+        cal.set(Calendar.MINUTE      , 0);
+        cal.set(Calendar.SECOND      , 0);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value2());
+
+        cal = cal(-1);
+        cal.set(Calendar.HOUR_OF_DAY , 0);
+        cal.set(Calendar.MINUTE      , 0);
+        cal.set(Calendar.SECOND      , 0);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value3());
+
+        cal = cal(-1);
+        cal.set(Calendar.MINUTE      , 0);
+        cal.set(Calendar.SECOND      , 0);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value4());
+
+        cal = cal(-1);
+        cal.set(Calendar.SECOND      , 0);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value5());
+
+        cal = cal(-1);
+        cal.set(Calendar.MILLISECOND , 0);
+        assertEquals(new Timestamp(cal.getTimeInMillis()), r1.value6());
     }
 
     @Test

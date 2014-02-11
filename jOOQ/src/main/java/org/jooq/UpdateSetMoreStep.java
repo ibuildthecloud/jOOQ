@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -58,6 +58,6 @@ import org.jooq.api.annotation.State;
  * @author Lukas Eder
  */
 @State
-public interface UpdateSetMoreStep<R extends Record> extends UpdateSetStep<R>, UpdateWhereStep<R> {
+public interface UpdateSetMoreStep<R extends Record> extends UpdateSetStep<R>, UpdateFromStep<R> {
 
 }

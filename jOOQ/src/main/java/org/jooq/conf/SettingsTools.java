@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -149,6 +149,13 @@ public final class SettingsTools {
      */
     public static final boolean updatablePrimaryKeys(Settings settings) {
         return defaultIfNull(settings.isUpdatablePrimaryKeys(), false);
+    }
+
+    /**
+     * Whether primary keys should be updatable.
+     */
+    public static final boolean reflectionCaching(Settings settings) {
+        return defaultIfNull(settings.isReflectionCaching(), true);
     }
 
     /**

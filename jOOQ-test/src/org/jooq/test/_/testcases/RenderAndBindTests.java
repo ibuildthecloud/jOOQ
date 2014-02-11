@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -229,11 +229,14 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
     @Test
     public void testManyVarcharBindValues() throws Exception {
-        int n = 300;
+        /* [pro] xx
+        xx xxxxxxx xx xxxxxxxx xxxxx xxxxx xx xxx xxxxxxxx
+        xx [/pro] */
+        int n = 255;
         String s = "1234567890";
 
 
-        // [#1726] Check if large amounts of VARCHAR bind values can be handled
+        // [#1726] Check if "large" amounts of VARCHAR bind values can be handled
         Record record = create().select(Collections.nCopies(n, val(s))).fetchOne();
         assertEquals(n, record.size());
         assertEquals(Collections.nCopies(n, s), asList(record.intoArray()));

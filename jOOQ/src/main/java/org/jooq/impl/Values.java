@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -68,7 +68,14 @@ class Values<R extends Record> extends AbstractTable<R> {
     Values(Row[] rows) {
         super("values");
 
-        this.rows = rows;
+        this.rows = assertNotEmpty(rows);
+    }
+
+    static Row[] assertNotEmpty(Row[] rows) {
+        if (rows == null || rows.length == 0)
+            throw new IllegalArgumentException("Cannot create a VALUES() constructor with an empty set of rows");
+
+        return rows;
     }
 
     @SuppressWarnings("unchecked")

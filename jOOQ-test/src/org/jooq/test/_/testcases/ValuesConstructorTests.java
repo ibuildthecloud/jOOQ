@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -42,15 +42,19 @@ package org.jooq.test._.testcases;
 
 import static junit.framework.Assert.assertEquals;
 import static org.jooq.impl.DSL.row;
+import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.values;
 
 import java.sql.Date;
 
+import org.jooq.Record;
 import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Record3;
 import org.jooq.Record6;
 import org.jooq.Result;
+import org.jooq.RowN;
+import org.jooq.Table;
 import org.jooq.TableRecord;
 import org.jooq.UpdatableRecord;
 import org.jooq.test.BaseTest;
@@ -103,8 +107,37 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
         assertEquals(1, r21.getValue(0, 0));
         assertEquals("a", r21.getValue(0, 1));
 
+        Result<Record3<Integer, String, Date>> r1 =
         create().selectFrom(values(
             row(1, "a", Date.valueOf("2013-01-01")),
             row(2, "b", Date.valueOf("2013-01-02"))).as("my_table", "int_col", "string_col", "date_col")).fetch();
+
+        Result<Record> r2 =
+        create().selectFrom(values(new RowN[] {
+            row(new Object[] { 1, "a", Date.valueOf("2013-01-01")}),
+            row(new Object[] { 2, "b", Date.valueOf("2013-01-02")})}).as("my_table", "int_col", "string_col", "date_col")).fetch();
+
+        assertEquals(r1, r2);
+    }
+
+    @Test
+    public void testResultConstructor() throws Exception {
+        Result<Record2<Integer, String>> booksResult =
+        create().select(TBook_ID(), TBook_TITLE())
+                .from(TBook())
+                .orderBy(TBook_ID())
+                .fetch();
+
+        Table<Record2<Integer, String>> booksTable = table(booksResult);
+
+        assertEquals(
+            booksResult,
+            create().selectFrom(booksTable).fetch());
+
+        assertEquals(
+            BOOK_IDS,
+            create().select(booksTable.field(TBook_ID()))
+                    .from(booksTable)
+                    .fetch(TBook_ID()));
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -61,6 +61,7 @@ import java.util.Map;
 
 import org.jooq.Attachable;
 import org.jooq.Converter;
+import org.jooq.DataType;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.RecordMapper;
@@ -328,6 +329,11 @@ abstract class AbstractRecord extends AbstractStore implements Record {
             val.setValue(value);
         }
 
+        // [#2698] If the primary key has not yet been set
+        else if (val.getOriginal() == null) {
+            val.setValue(value);
+        }
+
         // [#979] If the primary key is being changed, all other fields' flags
         // need to be set to true for in case this record is stored again, an
         // INSERT statement will thus be issued
@@ -507,7 +513,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
         Class<E> type = (Class<E>) object.getClass();
 
         try {
-            return new DefaultRecordMapper<Record, E>(fields.fields, type, object).map(this);
+            return new DefaultRecordMapper<Record, E>(fields.fields, type, object, configuration()).map(this);
         }
 
         // Pass MappingExceptions on to client code
@@ -522,48 +528,62 @@ abstract class AbstractRecord extends AbstractStore implements Record {
     }
 
     @Override
-    public final <R extends Record> R into(final Table<R> table) {
-        return Utils.newRecord(table, configuration())
-                    .operate(new RecordOperation<R, MappingException>() {
+    public final <R extends Record> R into(Table<R> table) {
+        return Utils.newRecord(table, configuration()).operate(new TransferRecordState<R>());
+    }
 
-            @Override
-            public R operate(R record) throws MappingException {
-                try {
-                    for (Field<?> targetField : table.fields()) {
+    final <R extends Record> R intoRecord(Class<R> type) {
+        return Utils.newRecord(type, fields(), configuration()).operate(new TransferRecordState<R>());
+    }
+
+    private class TransferRecordState<R extends Record> implements RecordOperation<R, MappingException> {
+
+        @Override
+        public R operate(R target) throws MappingException {
+            AbstractRecord source = AbstractRecord.this;
+
+            try {
+
+                // [#1522] [#2989] If possible the complete state of this record should be copied onto the other record
+                if (target instanceof AbstractRecord) {
+                    AbstractRecord t = (AbstractRecord) target;
+
+                    // Iterate over target fields, to avoid ambiguities when two source fields share the same name.
+                    for (int targetIndex = 0; targetIndex < t.size(); targetIndex++) {
+                        Field<?> targetField = t.field(targetIndex);
+                        int sourceIndex = fields.indexOf(targetField);
+
+                        if (sourceIndex >= 0) {
+                            DataType<?> targetType = targetField.getDataType();
+                            Value<?> sourceValue = values[sourceIndex];
+
+                            t.values[targetIndex] = new Value<Object>(
+                                targetType.convert(sourceValue.getValue()),
+                                targetType.convert(sourceValue.getOriginal()),
+                                sourceValue.isChanged()
+                            );
+                        }
+                    }
+                }
+
+                else {
+                    for (Field<?> targetField : target.fields()) {
                         Field<?> sourceField = field(targetField);
 
                         if (sourceField != null) {
-                            Utils.setValue(record, targetField, AbstractRecord.this, sourceField);
+                            Utils.setValue(target, targetField, source, sourceField);
                         }
                     }
-
-                    // [#1522] If the primary key has been fully fetched, then changed
-                    // flags should all be reset in order for the returned record to be
-                    // updatable using store()
-                    if (record instanceof AbstractRecord) {
-                        UniqueKey<?> key = ((AbstractRecord) record).getPrimaryKey();
-
-                        if (key != null) {
-                            boolean isKeySet = true;
-
-                            for (Field<?> field : key.getFields()) {
-                                isKeySet = isKeySet && (field(field) != null);
-                            }
-
-                            if (isKeySet) {
-                                record.changed(false);
-                            }
-                        }
-                    }
-
-                    return record;
-                    // All reflection exceptions are intercepted
                 }
-                catch (Exception e) {
-                    throw new MappingException("An error ocurred when mapping record to " + table, e);
-                }
+
+                return target;
             }
-        });
+
+            // All reflection exceptions are intercepted
+            catch (Exception e) {
+                throw new MappingException("An error ocurred when mapping record to " + target, e);
+            }
+        }
     }
 
     @Override
@@ -619,7 +639,7 @@ abstract class AbstractRecord extends AbstractStore implements Record {
             Class<?> type = source.getClass();
 
             try {
-                boolean useAnnotations = hasColumnAnnotations(type);
+                boolean useAnnotations = hasColumnAnnotations(configuration(), type);
 
                 for (Field<?> field : f) {
                     List<java.lang.reflect.Field> members;
@@ -627,14 +647,14 @@ abstract class AbstractRecord extends AbstractStore implements Record {
 
                     // Annotations are available and present
                     if (useAnnotations) {
-                        members = getAnnotatedMembers(type, field.getName());
-                        method = getAnnotatedGetter(type, field.getName());
+                        members = getAnnotatedMembers(configuration(), type, field.getName());
+                        method = getAnnotatedGetter(configuration(), type, field.getName());
                     }
 
                     // No annotations are present
                     else {
-                        members = getMatchingMembers(type, field.getName());
-                        method = getMatchingGetter(type, field.getName());
+                        members = getMatchingMembers(configuration(), type, field.getName());
+                        method = getMatchingGetter(configuration(), type, field.getName());
                     }
 
                     // Use only the first applicable method or member

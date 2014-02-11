@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -72,6 +72,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import org.jooq.AggregateFunction;
 // ...
 import org.jooq.DAO;
 import org.jooq.DSLContext;
@@ -459,7 +460,7 @@ public abstract class jOOQAbstractTest<
     }
 
     @BeforeClass
-    public static void testStart() {
+    public static void testStart() throws Exception {
         log.info("STARTING");
     }
 
@@ -915,6 +916,9 @@ public abstract class jOOQAbstractTest<
     protected abstract TableField<IPK, Integer> TIdentityPK_ID();
     protected abstract TableField<IPK, Integer> TIdentityPK_VAL();
 
+    protected <N extends Number> AggregateFunction<N> secondMax(Field<N> val) {
+        return null;
+    }
     protected abstract Field<? extends Number> FAuthorExistsField(String authorName);
     protected abstract Field<? extends Number> FOneField();
     protected abstract Field<? extends Number> FNumberField(Number n);
@@ -1527,6 +1531,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testFetchIntoRecordClass() throws Exception {
+        new FetchTests(this).testFetchIntoRecordClass();
+    }
+
+    @Test
     public void testFetchIntoTable() throws Exception {
         new FetchTests(this).testFetchIntoTable();
     }
@@ -1702,6 +1711,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testUpdateFrom() throws Exception {
+        new InsertUpdateTests(this).testUpdateFrom();
+    }
+
+    @Test
     public void testInsertOnDuplicateKeyUpdate() throws Exception {
         new InsertUpdateTests(this).testInsertOnDuplicateKeyUpdate();
     }
@@ -1764,6 +1778,16 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testDateTimeArithmetic() throws Exception {
         new DataTypeTests(this).testDateTimeArithmetic();
+    }
+
+    @Test
+    public void testFunctionsOnDates_DATE_ADD() throws Exception {
+        new DataTypeTests(this).testFunctionsOnDates_DATE_ADD();
+    }
+
+    @Test
+    public void testFunctionsOnDates_TRUNC() throws Exception {
+        new DataTypeTests(this).testFunctionsOnDates_TRUNC();
     }
 
     @Test
@@ -1889,6 +1913,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testValuesConstructor() throws Exception {
         new ValuesConstructorTests(this).testValuesConstructor();
+    }
+
+    @Test
+    public void testResultConstructor() throws Exception {
+        new ValuesConstructorTests(this).testResultConstructor();
     }
 
     @Test
@@ -2059,6 +2088,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testBitwiseOperations() throws Exception {
         new FunctionTests(this).testBitwiseOperations();
+    }
+
+    @Test
+    public void testUserDefinedAggregateFunctions() throws Exception {
+        new AggregateWindowFunctionTests(this).testUserDefinedAggregateFunctions();
     }
 
     @Test
@@ -2527,8 +2561,18 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
-    public void testBenchmarkRecordInto() throws Exception {
-        new BenchmarkTests(this).testBenchmarkRecordInto();
+    public void testBenchmarkRecordIntoWithAnnotations() throws Exception {
+        new BenchmarkTests(this).testBenchmarkRecordIntoWithAnnotations();
+    }
+
+    @Test
+    public void testBenchmarkRecordIntoWithoutAnnotations() throws Exception {
+        new BenchmarkTests(this).testBenchmarkRecordIntoWithoutAnnotations();
+    }
+
+    @Test
+    public void testBenchmarkRecordIntoTableRecord() throws Exception {
+        new BenchmarkTests(this).testBenchmarkRecordIntoTableRecord();
     }
 
     @Test

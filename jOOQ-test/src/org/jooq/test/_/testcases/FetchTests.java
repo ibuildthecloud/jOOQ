@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -47,6 +47,7 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
+// ...
 import static org.jooq.SQLDialect.H2;
 // ...
 import static org.jooq.SQLDialect.POSTGRES;
@@ -1280,6 +1281,34 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     }
 
     @Test
+    public void testFetchIntoRecordClass() throws Exception {
+        B b1 = create().selectFrom(TBook()).where(TBook_ID().eq(1)).fetchOne();
+        B b2 = b1.into(TBook().getRecordType());
+
+        assertEquals(b1, b2);
+        assertEquals(b1.getValue(TBook_TITLE()), b2.getValue(TBook_TITLE()));
+        assertEquals(b1.changed(), b2.changed());
+        assertEquals(b1.changed(TBook_TITLE()), b2.changed(TBook_TITLE()));
+        assertEquals(b1.original(), b2.original());
+        assertEquals(b1.original(TBook_TITLE()), b2.original(TBook_TITLE()));
+
+        b1.setValue(TBook_TITLE(), "abc");
+        b2 = b1.into(TBook().getRecordType());
+        assertEquals("abc", b1.getValue(TBook_TITLE()));
+        assertEquals("abc", b2.getValue(TBook_TITLE()));
+        assertEquals(b1.changed(), b2.changed());
+        assertTrue(b1.changed());
+        assertTrue(b2.changed());
+        assertFalse(b1.changed(TBook_ID()));
+        assertFalse(b2.changed(TBook_ID()));
+        assertTrue(b1.changed(TBook_TITLE()));
+        assertTrue(b2.changed(TBook_TITLE()));
+        assertEquals(b1.original(), b2.original());
+        assertEquals("1984", b1.original(TBook_TITLE()));
+        assertEquals("1984", b2.original(TBook_TITLE()));
+    }
+
+    @Test
     public void testFetchIntoTable() throws Exception {
         jOOQAbstractTest.reset = false;
 
@@ -1591,21 +1620,29 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
             ResultSet rs = create().resultQuery("select * from t_author order by id").fetchResultSet();
             assertTrue(rs.next());
             assertEquals(1, rs.getInt(1));
-            assertEquals(1, rs.getInt(1));
             assertFalse(rs.wasNull());
-            assertEquals(1, rs.getInt(TAuthor_ID().getName()));
-            assertEquals((short) 1, rs.getShort(TAuthor_ID().getName()));
-            assertEquals(1L, rs.getLong(TAuthor_ID().getName()));
             assertEquals(AUTHOR_FIRST_NAMES.get(0), rs.getString(2));
-            assertEquals(AUTHOR_FIRST_NAMES.get(0), rs.getString(TAuthor_FIRST_NAME().getName()));
             assertEquals(AUTHOR_LAST_NAMES.get(0), rs.getString(3));
-            assertEquals(AUTHOR_LAST_NAMES.get(0), rs.getString(TAuthor_LAST_NAME().getName()));
+
+            // Some JDBC drivers don't cache ResultSet. The same value cannot be fetched twice, then.
+            if (!asList().contains(dialect().family())) {
+                assertEquals(1, rs.getInt(1));
+                assertEquals(1, rs.getInt(TAuthor_ID().getName()));
+                assertEquals((short) 1, rs.getShort(TAuthor_ID().getName()));
+                assertEquals(1L, rs.getLong(TAuthor_ID().getName()));
+                assertEquals(AUTHOR_FIRST_NAMES.get(0), rs.getString(TAuthor_FIRST_NAME().getName()));
+                assertEquals(AUTHOR_LAST_NAMES.get(0), rs.getString(TAuthor_LAST_NAME().getName()));
+            }
 
             assertTrue(rs.next());
             assertEquals(2, rs.getInt(1));
-            assertEquals(2, rs.getInt(1));
             assertFalse(rs.wasNull());
-            assertEquals(2, rs.getInt(TAuthor_ID().getName()));
+
+            // Some JDBC drivers don't cache ResultSet. The same value cannot be fetched twice, then.
+            if (!asList().contains(dialect().family())) {
+                assertEquals(2, rs.getInt(1));
+                assertEquals(2, rs.getInt(TAuthor_ID().getName()));
+            }
 
             assertFalse(rs.next());
             rs.close();

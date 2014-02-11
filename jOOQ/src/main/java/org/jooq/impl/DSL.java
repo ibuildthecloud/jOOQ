@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -4475,10 +4475,11 @@ public class DSL {
 
     /**
      * A synonym for {@link Select#asTable()}, which might look a bit more fluent
-     * like this, to some users
+     * like this, to some users.
      *
      * @see Select#asTable()
      */
+    @Support
     @Transition(
         name = "TABLE",
         args = "Select",
@@ -4486,6 +4487,33 @@ public class DSL {
     )
     public static <R extends Record> Table<R> table(Select<R> select) {
         return select.asTable();
+    }
+
+    /**
+     * Use a previously obtained result as a new {@link Table} that can be used
+     * in SQL statements through {@link #values(RowN...)}.
+     *
+     * @see #values(RowN...)
+     */
+    @Support
+    @Transition(
+        name = "TABLE",
+        args = "Result"
+    )
+    public static <R extends Record> Table<R> table(Result<R> result) {
+        int size = result.size();
+
+        RowN[] rows = new RowN[size];
+        for (int i = 0; i < size; i++)
+            rows[i] = (RowN) result.get(i).valuesRow();
+
+        Field<?>[] fields = result.fields();
+        String[] columns = new String[fields.length];
+        for (int i = 0; i < fields.length; i++)
+            columns[i] = fields[i].getName();
+
+        // TODO [#2986] Coerce the record type upon the resulting table.
+        return (Table<R>) values(rows).as("v", columns);
     }
 
     /**
@@ -7538,6 +7566,46 @@ public class DSL {
     }
 
     /**
+     * Add an interval to a date, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Date> dateAdd(Date date, Number interval, DatePart datePart) {
+        return new DateAdd<Date>(Utils.field(date), Utils.field(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a date, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Date> dateAdd(Date date, Field<? extends Number> interval, DatePart datePart) {
+        return new DateAdd<Date>(Utils.field(date), nullSafe(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a date, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Date> dateAdd(Field<Date> date, Number interval, DatePart datePart) {
+        return new DateAdd<Date>(nullSafe(date), Utils.field(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a date, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Date> dateAdd(Field<Date> date, Field<? extends Number> interval, DatePart datePart) {
+        return new DateAdd<Date>(nullSafe(date), nullSafe(interval), datePart);
+    }
+
+    /**
      * Get the date difference in number of days.
      * <p>
      * This translates into any dialect
@@ -7615,6 +7683,46 @@ public class DSL {
     )
     public static Field<Timestamp> timestampAdd(Field<Timestamp> timestamp, Field<? extends Number> interval) {
         return nullSafe(timestamp).add(interval);
+    }
+
+    /**
+     * Add an interval to a timestamp, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Timestamp> timestampAdd(Timestamp date, Number interval, DatePart datePart) {
+        return new DateAdd<Timestamp>(Utils.field(date), Utils.field(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a timestamp, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Timestamp> timestampAdd(Timestamp date, Field<? extends Number> interval, DatePart datePart) {
+        return new DateAdd<Timestamp>(Utils.field(date), nullSafe(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a timestamp, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Timestamp> timestampAdd(Field<Timestamp> date, Number interval, DatePart datePart) {
+        return new DateAdd<Timestamp>(nullSafe(date), Utils.field(interval), datePart);
+    }
+
+    /**
+     * Add an interval to a timestamp, given a date part.
+     * <p>
+     * This translates into any dialect
+     */
+    @Support
+    public static Field<Timestamp> timestampAdd(Field<Timestamp> date, Field<? extends Number> interval, DatePart datePart) {
+        return new DateAdd<Timestamp>(nullSafe(date), nullSafe(interval), datePart);
     }
 
     /**
@@ -7701,51 +7809,52 @@ public class DSL {
         return new TimestampDiff(nullSafe(timestamp1), nullSafe(timestamp2));
     }
 
-    // -------------------------------------------------------------------------
-    // [#470] TRUNC(datetime) will be implemented in a future release
-    // -------------------------------------------------------------------------
-
     /**
-     * This is not yet implemented.
+     * Truncate a date to the beginning of the day.
      */
-    static Field<Date> trunc(Date date) {
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static Field<Date> trunc(Date date) {
         return trunc(date, DatePart.DAY);
     }
 
     /**
-     * This is not yet implemented.
+     * Truncate a date to a given datepart.
      */
-    static Field<Date> trunc(Date date, DatePart part) {
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static Field<Date> trunc(Date date, DatePart part) {
         return trunc(Utils.field(date), part);
     }
 
     /**
-     * This is not yet implemented.
+     * Truncate a timestamp to the beginning of the day.
      */
-    static Field<Timestamp> trunc(Timestamp timestamp) {
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static Field<Timestamp> trunc(Timestamp timestamp) {
         return trunc(timestamp, DatePart.DAY);
     }
 
     /**
-     * This is not yet implemented.
+     * Truncate a timestamp to a given datepart.
      */
-    static Field<Timestamp> trunc(Timestamp timestamp, DatePart part) {
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static Field<Timestamp> trunc(Timestamp timestamp, DatePart part) {
         return trunc(Utils.field(timestamp), part);
     }
 
     /**
-     * This is not yet implemented.
+     * Truncate a date or a timestamp to the beginning of the day.
      */
-    static <T extends java.util.Date> Field<T> trunc(Field<T> date) {
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static <T extends java.util.Date> Field<T> trunc(Field<T> date) {
         return trunc(date, DatePart.DAY);
     }
 
     /**
-     * This is not yet implemented.
+     * Truncate a date or a timestamp to a given datepart.
      */
-    @SuppressWarnings("unused")
-    static <T extends java.util.Date> Field<T> trunc(Field<T> date, DatePart part) {
-        throw new UnsupportedOperationException("This is not yet implemented");
+    @Support({ CUBRID, HSQLDB, POSTGRES })
+    public static <T extends java.util.Date> Field<T> trunc(Field<T> date, DatePart part) {
+        return new TruncDate<T>(date, part);
     }
 
     // -------------------------------------------------------------------------
@@ -12328,8 +12437,51 @@ public class DSL {
     }
 
     // -------------------------------------------------------------------------
-    // [#915] TODO: These are experimental VALUES() table constructors
+    // XXX [#915] VALUES() table constructors
     // -------------------------------------------------------------------------
+
+    /**
+     * Create a <code>VALUES()</code> expression of arbitrary degree.
+     * <p>
+     * The <code>VALUES()</code> constructor is a tool supported by some
+     * databases to allow for constructing tables from constant values.
+     * <p>
+     * If a database doesn't support the <code>VALUES()</code> constructor, it
+     * can be simulated using <code>SELECT .. UNION ALL ..</code>. The following
+     * expressions are equivalent:
+     * <p>
+     * <pre><code>
+     * -- Using VALUES() constructor
+     * VALUES(val1_1, val1_2),
+     *       (val2_1, val2_2),
+     *       (val3_1, val3_2)
+     * AS "v"("c1"  , "c2"  )
+     *
+     * -- Using UNION ALL
+     * SELECT val1_1 AS "c1", val1_2 AS "c2") UNION ALL
+     * SELECT val1_1 AS "c1", val1_2 AS "c2") UNION ALL
+     * SELECT val1_1 AS "c1", val1_2 AS "c2")
+     * </code></pre>
+     * <p>
+     * Use {@link Table#as(String, String...)} to rename the resulting table and
+     * its columns.
+     */
+    @Support
+    @Transition(
+        name = "VALUES",
+        args = "Row+"
+    )
+    public static Table<Record> values(RowN... rows) {
+        Values.assertNotEmpty(rows);
+        int size = rows[0].size();
+
+        String[] columns = new String[size];
+
+        for (int i = 0; i < size; i++)
+            columns[i] = "c" + i;
+
+        return new Values<Record>(rows).as("v", columns);
+    }
 
 // [jooq-tools] START [values]
 

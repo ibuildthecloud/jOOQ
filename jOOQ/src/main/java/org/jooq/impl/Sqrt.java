@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -77,7 +77,7 @@ class Sqrt extends AbstractFunction<BigDecimal> {
                 return DSL.power(argument, 0.5);
 
             default:
-                return field("sqrt", SQLDataType.NUMERIC, argument);
+                return field("{sqrt}({0})", SQLDataType.NUMERIC, argument);
         }
     }
 }

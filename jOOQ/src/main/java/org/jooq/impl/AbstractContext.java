@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -242,6 +242,11 @@ abstract class AbstractContext<C extends Context<C>> implements Context<C> {
         }
 
         @Override
+        public final int clausesLength() {
+            return visitClauses.size();
+        }
+
+        @Override
         public final QueryPart queryPart() {
             return visitParts.peekLast();
         }
@@ -255,6 +260,11 @@ abstract class AbstractContext<C extends Context<C>> implements Context<C> {
         @Override
         public final QueryPart[] queryParts() {
             return visitParts.toArray(new QueryPart[visitParts.size()]);
+        }
+
+        @Override
+        public final int queryPartsLength() {
+            return visitParts.size();
         }
 
         @Override

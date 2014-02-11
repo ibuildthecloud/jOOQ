@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -534,6 +534,19 @@ public enum Clause {
      * </ul>
      */
     UPDATE_SET_ASSIGNMENT,
+
+    /**
+     * A vendor-specific <code>FROM</code> clause within an {@link #UPDATE} statement.
+     * <p>
+     * This clause surrounds
+     * <ul>
+     * <li>the <code>FROM</code> keyword</li>
+     * <li>the table reference list</li>
+     * </ul>
+     * <p>
+     * See {@link #TABLE} and related clauses for possible table references.
+     */
+    UPDATE_FROM,
 
     /**
      * A <code>WHERE</code> clause within an {@link #UPDATE} statement.

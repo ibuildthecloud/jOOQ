@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -80,7 +80,7 @@ class Power extends AbstractFunction<BigDecimal> {
                 return DSL.exp(DSL.ln(arg1).mul(arg2));
 
             default:
-                return field("{power}({0})", SQLDataType.NUMERIC, getArguments());
+                return field("{power}({0}, {1})", SQLDataType.NUMERIC, getArguments());
         }
     }
 }

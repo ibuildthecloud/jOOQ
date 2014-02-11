@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -59,6 +59,7 @@ import java.util.UUID;
 
 import junit.framework.Assert;
 
+import org.jooq.AggregateFunction;
 // ...
 import org.jooq.Configuration;
 import org.jooq.DAO;
@@ -665,6 +666,10 @@ public abstract class BaseTest<
 
     protected TableField<IPK, Integer> TIdentityPK_VAL() {
         return delegate.TIdentityPK_VAL();
+    }
+
+    protected AggregateFunction<Integer> secondMax(Field<Integer> val) {
+        return delegate.secondMax(val);
     }
 
     protected Field<? extends Number> FAuthorExistsField(String authorName) {

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -67,6 +67,7 @@ import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+import org.jooq.AggregateFunction;
 // ...
 import org.jooq.DSLContext;
 import org.jooq.DataType;
@@ -649,6 +650,12 @@ public class HSQLDBTest extends jOOQAbstractTest<
     @Override
     protected TableField<TIdentityPkRecord, Integer> TIdentityPK_VAL() {
         return T_IDENTITY_PK.VAL;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    protected AggregateFunction secondMax(Field val) {
+        return Routines.secondMax(val);
     }
 
     @Override

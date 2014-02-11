@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2009-2013, Data Geekery GmbH (http://www.datageekery.com)
+ * Copyright (c) 2009-2014, Data Geekery GmbH (http://www.datageekery.com)
  * All rights reserved.
  *
  * This work is dual-licensed
@@ -104,7 +104,8 @@ class FieldMapsForInsert extends AbstractQueryPart {
                 xx [/pro] */
                 case FIREBIRD:
                 case SQLITE:
-                    context.start(INSERT_SELECT);
+                    context.formatSeparator()
+                           .start(INSERT_SELECT);
                     toSQLInsertSelect(context);
                     context.end(INSERT_SELECT);
 
