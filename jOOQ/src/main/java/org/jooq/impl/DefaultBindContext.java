@@ -43,6 +43,7 @@ package org.jooq.impl;
 import static java.util.Arrays.asList;
 // ...
 // ...
+// ...
 import static org.jooq.SQLDialect.POSTGRES;
 import static org.jooq.SQLDialect.SQLITE;
 // ...
@@ -173,9 +174,9 @@ class DefaultBindContext extends AbstractBindContext {
                 x
             x
 
-            xx xxxxxxx xxxxxx xxxxxx xxxx xxx xxxx xxxxxxxx xxx xxx xxxx xxxxxx
+            xx xxxxxxx xxxxxxx xxx xxx xxxxxx xxxxxx xxxx xxx xxxx xxxxxxxx xxx xxx xxxx xxxxxx
             xx xxxxxx xxx xxx xxxxxxx xxxxx
-            xxxx xx xxxxxxxx xx xxxxxxxxxxxxx xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xx xxxxxxx x
+            xxxx xx xxxxxxxx xx xxxxxxxxxxxxx xx xxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx x
                 xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxx
             x
 
@@ -203,187 +204,208 @@ class DefaultBindContext extends AbstractBindContext {
                 stmt.setObject(nextIndex(), null);
             }
         }
-        else if (type == Blob.class) {
-            stmt.setBlob(nextIndex(), (Blob) value);
-        }
-        else if (type == Boolean.class) {
-            stmt.setBoolean(nextIndex(), (Boolean) value);
-        }
-        else if (type == BigDecimal.class) {
-            if (asList(SQLITE).contains(dialect.family())) {
-                stmt.setString(nextIndex(), value.toString());
+        else {
+
+            // Try to infer the bind value type from the actual bind value if possible.
+            if (type == Object.class) {
+                type = value.getClass();
             }
-            else {
-                stmt.setBigDecimal(nextIndex(), (BigDecimal) value);
+
+            if (type == Blob.class) {
+                stmt.setBlob(nextIndex(), (Blob) value);
             }
-        }
-        else if (type == BigInteger.class) {
-            if (asList(SQLITE).contains(dialect.family())) {
-                stmt.setString(nextIndex(), value.toString());
+            else if (type == Boolean.class) {
+                /* [pro] xx
+                xx xx xxxxxx xxxxxx xxxxxx xx xxxxx xxxxx xxxxx xx xxxxxxxxx xx xxxxxxxxxx xx xxxxxxx xxxxxxx
+                xx xxxxxxxxxxxxxxxxx xx xxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxx xxxxx x x x xxx
+                xxxx
+                xx [/pro] */
+                    stmt.setBoolean(nextIndex(), (Boolean) value);
             }
-            else {
-                stmt.setBigDecimal(nextIndex(), new BigDecimal((BigInteger) value));
+            else if (type == BigDecimal.class) {
+                if (asList(SQLITE).contains(dialect.family())) {
+                    stmt.setString(nextIndex(), value.toString());
+                }
+                else {
+                    stmt.setBigDecimal(nextIndex(), (BigDecimal) value);
+                }
             }
-        }
-        else if (type == Byte.class) {
-            stmt.setByte(nextIndex(), (Byte) value);
-        }
-        else if (type == byte[].class) {
-            stmt.setBytes(nextIndex(), (byte[]) value);
-        }
-        else if (type == Clob.class) {
-            stmt.setClob(nextIndex(), (Clob) value);
-        }
-        else if (type == Double.class) {
-            stmt.setDouble(nextIndex(), (Double) value);
-        }
-        else if (type == Float.class) {
-            stmt.setFloat(nextIndex(), (Float) value);
-        }
-        else if (type == Integer.class) {
-            stmt.setInt(nextIndex(), (Integer) value);
-        }
-        else if (type == Long.class) {
-            /* [pro] xx
-            xx xxxxxxxxxxxxxxxxx xx xxxxxxx x
-                xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxx
-            x
-            xxxx
-            xx [/pro] */
-            {
+            else if (type == BigInteger.class) {
+                if (asList(SQLITE).contains(dialect.family())) {
+                    stmt.setString(nextIndex(), value.toString());
+                }
+                else {
+                    stmt.setBigDecimal(nextIndex(), new BigDecimal((BigInteger) value));
+                }
+            }
+            else if (type == Byte.class) {
+                stmt.setByte(nextIndex(), (Byte) value);
+            }
+            else if (type == byte[].class) {
+                stmt.setBytes(nextIndex(), (byte[]) value);
+            }
+            else if (type == Clob.class) {
+                stmt.setClob(nextIndex(), (Clob) value);
+            }
+            else if (type == Double.class) {
+                stmt.setDouble(nextIndex(), (Double) value);
+            }
+            else if (type == Float.class) {
+                stmt.setFloat(nextIndex(), (Float) value);
+            }
+            else if (type == Integer.class) {
+                stmt.setInt(nextIndex(), (Integer) value);
+            }
+            else if (type == Long.class) {
+                /* [pro] xx
+                xx xxxxxxxxxxxxxxxxx xx xxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxx
+                xxxx
+                xx [/pro] */
                 stmt.setLong(nextIndex(), (Long) value);
             }
-        }
-        else if (type == Short.class) {
-            stmt.setShort(nextIndex(), (Short) value);
-        }
-        else if (type == String.class) {
-            stmt.setString(nextIndex(), (String) value);
-        }
+            else if (type == Short.class) {
+                stmt.setShort(nextIndex(), (Short) value);
+            }
+            else if (type == String.class) {
+                stmt.setString(nextIndex(), (String) value);
+            }
 
-        // There is potential for trouble when binding date time as such
-        // -------------------------------------------------------------
-        else if (type == Date.class) {
-            if (dialect == SQLITE) {
-                stmt.setString(nextIndex(), ((Date) value).toString());
-            }
-            else {
-                stmt.setDate(nextIndex(), (Date) value);
-            }
-        }
-        else if (type == Time.class) {
-            if (dialect == SQLITE) {
-                stmt.setString(nextIndex(), ((Time) value).toString());
-            }
-            else {
-                stmt.setTime(nextIndex(), (Time) value);
-            }
-        }
-        else if (type == Timestamp.class) {
-            if (dialect == SQLITE) {
-                stmt.setString(nextIndex(), ((Timestamp) value).toString());
-            }
-            else {
-                stmt.setTimestamp(nextIndex(), (Timestamp) value);
-            }
-        }
-
-        // [#566] Interval data types are best bound as Strings
-        else if (type == YearToMonth.class) {
-            if (dialect == POSTGRES) {
-                stmt.setObject(nextIndex(), toPGInterval((YearToMonth) value));
-            }
-            else {
-                stmt.setString(nextIndex(), value.toString());
-            }
-        }
-        else if (type == DayToSecond.class) {
-            if (dialect == POSTGRES) {
-                stmt.setObject(nextIndex(), toPGInterval((DayToSecond) value));
-            }
-            else {
-                stmt.setString(nextIndex(), value.toString());
-            }
-        }
-        else if (type == UByte.class) {
-            stmt.setShort(nextIndex(), ((UByte) value).shortValue());
-        }
-        else if (type == UShort.class) {
-            stmt.setInt(nextIndex(), ((UShort) value).intValue());
-        }
-        else if (type == UInteger.class) {
-            stmt.setLong(nextIndex(), ((UInteger) value).longValue());
-        }
-        else if (type == ULong.class) {
-            stmt.setBigDecimal(nextIndex(), new BigDecimal(value.toString()));
-        }
-        else if (type == UUID.class) {
-            switch (dialect.family()) {
-
-                // [#1624] Some JDBC drivers natively support the
-                // java.util.UUID data type
-                case H2:
-                case POSTGRES: {
-                    stmt.setObject(nextIndex(), value);
-                    break;
+            // There is potential for trouble when binding date time as such
+            // -------------------------------------------------------------
+            else if (type == Date.class) {
+                if (dialect == SQLITE) {
+                    stmt.setString(nextIndex(), ((Date) value).toString());
                 }
+                else {
+                    stmt.setDate(nextIndex(), (Date) value);
+                }
+            }
+            else if (type == Time.class) {
+                if (dialect == SQLITE) {
+                    stmt.setString(nextIndex(), ((Time) value).toString());
+                }
+                else {
+                    stmt.setTime(nextIndex(), (Time) value);
+                }
+            }
+            else if (type == Timestamp.class) {
+                if (dialect == SQLITE) {
+                    stmt.setString(nextIndex(), ((Timestamp) value).toString());
+                }
+                else {
+                    stmt.setTimestamp(nextIndex(), (Timestamp) value);
+                }
+            }
 
-                /* [pro] xx
-                xx xxxxx xxx xxxxxxxx xxxx xxxx xxxxx xx xx xxxx xxxx xxxxxxxx
-                xx xxxx xx xxxx xxxxxxxxxx xxxxxxx xxxx xxxxxxxxxxxxxxxxxx
-                xxxx xxxxxxxxxx
-                xxxx xxxxxxx
-
-                xx [/pro] */
-                // Most databases don't have such a type. In this case, jOOQ
-                // simulates the type
-                default: {
+            // [#566] Interval data types are best bound as Strings
+            else if (type == YearToMonth.class) {
+                if (dialect == POSTGRES) {
+                    stmt.setObject(nextIndex(), toPGInterval((YearToMonth) value));
+                }
+                else {
                     stmt.setString(nextIndex(), value.toString());
-                    break;
                 }
             }
-        }
-
-        // The type byte[] is handled earlier. byte[][] can be handled here
-        else if (type.isArray()) {
-            switch (dialect) {
-                case POSTGRES: {
-                    stmt.setString(nextIndex(), toPGArrayString((Object[]) value));
-                    break;
+            else if (type == DayToSecond.class) {
+                if (dialect == POSTGRES) {
+                    stmt.setObject(nextIndex(), toPGInterval((DayToSecond) value));
                 }
-                case HSQLDB: {
-                    Object[] a = (Object[]) value;
-                    Class<?> t = type;
+                else {
+                    stmt.setString(nextIndex(), value.toString());
+                }
+            }
+            else if (type == UByte.class) {
+                stmt.setShort(nextIndex(), ((UByte) value).shortValue());
+            }
+            else if (type == UShort.class) {
+                stmt.setInt(nextIndex(), ((UShort) value).intValue());
+            }
+            else if (type == UInteger.class) {
+                /* [pro] xx
+                xx xxxxxxxxxxxxxxxxx xx xxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxx
+                xxxx
+                xx [/pro] */
+                stmt.setLong(nextIndex(), ((UInteger) value).longValue());
+            }
+            else if (type == ULong.class) {
+                /* [pro] xx
+                xx xxxxxxxxxxxxxxxxx xx xxxxxxx
+                    xxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxx
+                xxxx
+                xx [/pro] */
+                stmt.setBigDecimal(nextIndex(), new BigDecimal(value.toString()));
+            }
+            else if (type == UUID.class) {
+                switch (dialect.family()) {
 
-                    // [#2325] Some array types are not natively supported by HSQLDB
-                    // More integration tests are probably needed...
-                    if (type == UUID[].class) {
-                        a = Convert.convertArray(a, String[].class);
-                        t = String[].class;
+                    // [#1624] Some JDBC drivers natively support the
+                    // java.util.UUID data type
+                    case H2:
+                    case POSTGRES: {
+                        stmt.setObject(nextIndex(), value);
+                        break;
                     }
 
-                    stmt.setArray(nextIndex(), new DefaultArray(dialect, a, t));
-                    break;
+                    /* [pro] xx
+                    xx xxxxx xxx xxxxxxxx xxxx xxxx xxxxx xx xx xxxx xxxx xxxxxxxx
+                    xx xxxx xx xxxx xxxxxxxxxx xxxxxxx xxxx xxxxxxxxxxxxxxxxxx
+                    xxxx xxxxxxxxxx
+                    xxxx xxxxxxx
+
+                    xx [/pro] */
+                    // Most databases don't have such a type. In this case, jOOQ
+                    // simulates the type
+                    default: {
+                        stmt.setString(nextIndex(), value.toString());
+                        break;
+                    }
                 }
-                case H2: {
-                    stmt.setObject(nextIndex(), value);
-                    break;
-                }
-                default:
-                    throw new SQLDialectNotSupportedException("Cannot bind ARRAY types in dialect " + dialect);
             }
-        }
-        /* [pro] xx
-        xxxx xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx x
-            xxxxxxxxxxxxxx xxxxxxxxxxx x xxxxxxxxxxxxxxxx xxxxxx
-            xxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        x
-        xx [/pro] */
-        else if (EnumType.class.isAssignableFrom(type)) {
-            stmt.setString(nextIndex(), ((EnumType) value).getLiteral());
-        }
-        else {
-            stmt.setObject(nextIndex(), value);
+
+            // The type byte[] is handled earlier. byte[][] can be handled here
+            else if (type.isArray()) {
+                switch (dialect) {
+                    case POSTGRES: {
+                        stmt.setString(nextIndex(), toPGArrayString((Object[]) value));
+                        break;
+                    }
+                    case HSQLDB: {
+                        Object[] a = (Object[]) value;
+                        Class<?> t = type;
+
+                        // [#2325] Some array types are not natively supported by HSQLDB
+                        // More integration tests are probably needed...
+                        if (type == UUID[].class) {
+                            a = Convert.convertArray(a, String[].class);
+                            t = String[].class;
+                        }
+
+                        stmt.setArray(nextIndex(), new DefaultArray(dialect, a, t));
+                        break;
+                    }
+                    case H2: {
+                        stmt.setObject(nextIndex(), value);
+                        break;
+                    }
+                    default:
+                        throw new SQLDialectNotSupportedException("Cannot bind ARRAY types in dialect " + dialect);
+                }
+            }
+            /* [pro] xx
+            xxxx xx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx x
+                xxxxxxxxxxxxxx xxxxxxxxxxx x xxxxxxxxxxxxxxxx xxxxxx
+                xxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+            x
+            xx [/pro] */
+            else if (EnumType.class.isAssignableFrom(type)) {
+                stmt.setString(nextIndex(), ((EnumType) value).getLiteral());
+            }
+            else {
+                stmt.setObject(nextIndex(), value);
+            }
         }
 
         return this;

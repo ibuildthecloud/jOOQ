@@ -76,6 +76,7 @@ import static org.jooq.types.Unsigned.ushort;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -1309,7 +1310,8 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
         T639 record = create().fetchOne(T639());
         assertEquals(1, (int) record.getValue(T639_ID()));
-        assertTrue(new BigDecimal("1234.567").compareTo(record.getValue(T639_BIG_DECIMAL())) == 0);
+        // In some test databases, DECIMAL types are emulated using DOUBLE
+        assertTrue(new BigDecimal("1234.567").compareTo(record.getValue(T639_BIG_DECIMAL()).movePointRight(3).setScale(0, RoundingMode.DOWN).movePointLeft(3)) == 0);
         assertEquals(2, (byte) record.getValue(T639_BYTE_DECIMAL()));
         assertEquals(3, (int) record.getValue(T639_INTEGER()));
         assertEquals(4, (int) record.getValue(T639_INTEGER_DECIMAL()));
@@ -1325,7 +1327,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
         // Various BigDecimal tests
         // ------------------------
-        if (dialect() == SQLDialect.SQLITE) {
+        if (asList(SQLITE).contains(dialect().family())) {
             log.info("SKIPPING", "Advanced BigDecimal tests");
         }
         else {
@@ -1372,6 +1374,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
         // Interval tests
         // --------------
         if (/* [pro] xx
+            xxxxxxxxx xx xxxxxx xx
             xxxxxxxxx xx xxx xx
             xxxxxxxxx xx xxx xx
             xxxxxxxxx xx xxxxxx xx xx xxxxxxx xxxxx xxx xxxx xxx xxxxxx
@@ -1785,7 +1788,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
                 .from(TBook())
                 .where(id1.in(val(1).coerce(Long.class), val(2).coerce(Long.class)))
                 .and(id2.in(val(1).coerce(String.class), val(2).coerce(String.class)))
-                .orderBy(id1.as("id1"), id2.as("id2"))
+                .orderBy(1, 2)
                 .fetch();
 
         assertEquals(2, result.size());

@@ -42,6 +42,7 @@ package org.jooq.test._.testcases;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.sql.Date;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ import org.jooq.Record6;
 import org.jooq.RecordContext;
 import org.jooq.TableRecord;
 import org.jooq.UpdatableRecord;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DefaultRecordListener;
 import org.jooq.test.BaseTest;
 import org.jooq.test.jOOQAbstractTest;
@@ -170,6 +172,24 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     }
 
     @Test
+    public void testRecordListenerWithException() throws Exception {
+        jOOQAbstractTest.reset = false;
+        WriteListener listener1 = new WriteListener();
+
+        B book = create(listener1).fetchOne(TBook(), TBook_ID().eq(1));
+
+        try {
+            book.changed(true);
+            book.insert();
+            fail();
+        }
+        catch (DataAccessException expected) {}
+
+        assertEquals(asList("insertStart", "insertEnd"), listener1.events);
+        assertEquals(1, listener1.exceptions.size());
+    }
+
+    @Test
     public void testRecordListenerBatchStore() throws Exception {
         jOOQAbstractTest.reset = false;
         WriteListener listener1 = new WriteListener();
@@ -179,10 +199,14 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
         create(listener1).batchStore(book1, book2).execute();
         assertEquals(asList(
-            "storeStart", "storeStart",
-            "insertStart", "insertStart",
-            "insertEnd", "insertEnd",
-            "storeEnd", "storeEnd"),
+            "storeStart",
+            "insertStart",
+            "insertEnd",
+            "storeEnd",
+            "storeStart",
+            "insertStart",
+            "insertEnd",
+            "storeEnd"),
         listener1.events);
     }
 
@@ -205,6 +229,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
     private static class WriteListener extends DefaultRecordListener {
         List<String> events = new ArrayList<String>();
+        List<Exception> exceptions = new ArrayList<Exception>();
 
         @Override
         public void storeStart(RecordContext ctx) {
@@ -244,6 +269,11 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
         @Override
         public void deleteEnd(RecordContext ctx) {
             events.add("deleteEnd");
+        }
+
+        @Override
+        public void exception(RecordContext ctx) {
+            exceptions.add(ctx.exception());
         }
     }
 }

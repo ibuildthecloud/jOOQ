@@ -446,13 +446,17 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
     @Test
     public void testInsertWithSelectAsField() throws Exception {
-        jOOQAbstractTest.reset = false;
 
         Field<Integer> ID3;
         Field<Integer> ID4;
 
         switch (dialect()) {
             /* [pro] xx
+            xxxx xxxxxxx
+                xx xxxxxxx xxxxxxxxx xxxx xxxx xxx xx xxxxxxx xxxx xxx xxxxxxx xx xxxxxxxxxxxx
+                xxxxxxxxxxxxxxxxxxxx xxxxxxx xxxx xxxxxxxxxxxxx
+                xxxxxxx
+
             xx xxxxxx xxx xxxxxxx xxxxx xxx xxxxxxxxx xxxx xxxxxx xxxxxxxx
             xxxx xxxx
 
@@ -472,6 +476,8 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
                     .from(TAuthor()).asField();
                 break;
         }
+
+        jOOQAbstractTest.reset = false;
 
         create().insertInto(TAuthor(),
                     TAuthor_ID(),
@@ -773,6 +779,13 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
 
     @Test
     public void testInsertReturningWithRenderNameStyleAS_IS() throws Exception {
+        // [#3035] TODO: Re-enable this test
+        switch (dialect().family()) {
+            case H2:
+                log.info("SKIPPING", "Insert Returning Test");
+                return;
+        }
+
         jOOQAbstractTest.reset = false;
 
         // [#2845] Some SQL dialects use Connection.prepareStatement(String, String[])
@@ -872,6 +885,7 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     public void testInsertOnDuplicateKeyUpdate() throws Exception {
         switch (dialect()) {
             /* [pro] xx
+            xxxx xxxxxxx
             xxxx xxxx
             xxxx xxxxxxx
             xx [/pro] */
@@ -1277,6 +1291,10 @@ extends BaseTest<A, AP, B, S, B2S, BS, L, X, DATE, BOOL, D, T, U, UU, I, IPK, T7
     @Test
     public void testUpdateSelect() throws Exception {
         switch (dialect()) {
+            /* [pro] xx
+            xxxx xxxxxxx
+            xx [/pro] */
+
             case SQLITE:
             case MARIADB:
             case MYSQL:

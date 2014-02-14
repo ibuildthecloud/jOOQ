@@ -1306,6 +1306,11 @@ public abstract class jOOQAbstractTest<
     }
 
     @Test
+    public void testBetweenConditions() throws Exception {
+        new PredicateTests(this).testBetweenConditions();
+    }
+
+    @Test
     public void testConditionsAsFields() throws Exception {
         new PredicateTests(this).testConditionsAsFields();
     }
@@ -1603,6 +1608,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testRecordListenerStore() throws Exception {
         new RecordListenerTests(this).testRecordListenerStore();
+    }
+
+    @Test
+    public void testRecordListenerWithException() throws Exception {
+        new RecordListenerTests(this).testRecordListenerWithException();
     }
 
     @Test
@@ -2025,7 +2035,7 @@ public abstract class jOOQAbstractTest<
         new JoinTests(this).testJoinOnKey();
     }
 
-    @Test
+    // TODO [#2870] @Test
     public void testJoinOnKeyWithAlias() throws Exception {
         new JoinTests(this).testJoinOnKeyWithAlias();
     }
@@ -2103,6 +2113,11 @@ public abstract class jOOQAbstractTest<
     @Test
     public void testFetchCount() throws Exception {
         new AggregateWindowFunctionTests(this).testFetchCount();
+    }
+
+    @Test
+    public void testFetchCountWithLimitOffset() throws Exception {
+        new AggregateWindowFunctionTests(this).testFetchCountWithLimitOffset();
     }
 
     @Test

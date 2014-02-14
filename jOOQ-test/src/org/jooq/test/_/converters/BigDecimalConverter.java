@@ -38,58 +38,37 @@
  * This library is distributed with a LIMITED WARRANTY. See the jOOQ License
  * and Maintenance Agreement for more details: http://www.jooq.org/licensing
  */
-package org.jooq.impl;
+package org.jooq.test._.converters;
 
-import org.jooq.RecordContext;
-import org.jooq.RecordListener;
+import java.math.BigDecimal;
 
-/**
- * A publicly available default implementation of {@link RecordListener}.
- * <p>
- * Use this to stay compatible with future API changes (i.e. added methods to
- * <code>RecordListener</code>)
- *
- * @author Lukas Eder
- */
-public class DefaultRecordListener implements RecordListener {
+import org.jooq.Converter;
+
+public class BigDecimalConverter implements Converter<Double, BigDecimal> {
+
+    /**
+     * Generated UID
+     */
+    private static final long serialVersionUID = 8435197329015077838L;
 
     @Override
-    public void storeStart(RecordContext ctx) {}
+    public BigDecimal from(Double d) {
+        return d == null ? null : new BigDecimal(d);
+    }
 
     @Override
-    public void storeEnd(RecordContext ctx) {}
+    public Double to(BigDecimal b) {
+        return b == null ? null : b.doubleValue();
+    }
 
     @Override
-    public void insertStart(RecordContext ctx) {}
+    public Class<Double> fromType() {
+        return Double.class;
+    }
 
     @Override
-    public void insertEnd(RecordContext ctx) {}
-
-    @Override
-    public void updateStart(RecordContext ctx) {}
-
-    @Override
-    public void updateEnd(RecordContext ctx) {}
-
-    @Override
-    public void deleteStart(RecordContext ctx) {}
-
-    @Override
-    public void deleteEnd(RecordContext ctx) {}
-
-    @Override
-    public void loadStart(RecordContext ctx) {}
-
-    @Override
-    public void loadEnd(RecordContext ctx) {}
-
-    @Override
-    public void refreshStart(RecordContext ctx) {}
-
-    @Override
-    public void refreshEnd(RecordContext ctx) {}
-
-    @Override
-    public void exception(RecordContext ctx) {}
+    public Class<BigDecimal> toType() {
+        return BigDecimal.class;
+    }
 
 }
